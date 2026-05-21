@@ -30,7 +30,7 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <LoginForm />
-            <p className="mt-6 text-center text-sm text-white/50">
+            <p className="mt-6 text-center text-sm text-neutral-500">
               New here?{" "}
               <Link href="/register" className="text-primary hover:text-primary/80">
                 Create an account
@@ -42,4 +42,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

@@ -22,14 +22,14 @@ export default function SetupDocsPage() {
           <Database className="size-5 text-primary" />
           <CardTitle>Phase 1 setup</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-5 text-sm leading-6 text-white/65">
+        <CardContent className="space-y-5 text-sm leading-6 text-neutral-600">
           <p>
-            Copy <code className="rounded bg-white/10 px-1.5 py-0.5">.env.example</code>{" "}
-            to <code className="rounded bg-white/10 px-1.5 py-0.5">.env.local</code>{" "}
+            Copy <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-950">.env.example</code>{" "}
+            to <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-950">.env.local</code>{" "}
             and add your Supabase and Resend credentials.
           </p>
           <p>
-            Run <code className="rounded bg-white/10 px-1.5 py-0.5">supabase/schema.sql</code>{" "}
+            Run <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-950">supabase/schema.sql</code>{" "}
             in the Supabase SQL editor to create profiles, apps, app versions,
             screenshots, categories, reviews, downloads, and RLS policies.
           </p>
@@ -41,4 +41,3 @@ export default function SetupDocsPage() {
     </main>
   );
 }
-

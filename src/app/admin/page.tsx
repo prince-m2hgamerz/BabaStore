@@ -26,7 +26,7 @@ export default async function AdminDashboardPage() {
             <CardTitle>Moderation queue</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-white/55">
+            <p className="text-sm text-neutral-600">
               Approve, reject, flag, and bulk moderation workflows are reserved
               for Phase 4 after app submissions exist.
             </p>
@@ -36,4 +36,3 @@ export default async function AdminDashboardPage() {
     </DashboardShell>
   );
 }
-

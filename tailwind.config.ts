@@ -47,11 +47,17 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)"
       },
       boxShadow: {
-        glow: "0 0 40px rgba(59, 130, 246, 0.22)",
-        glass: "0 18px 80px rgba(0, 0, 0, 0.34)"
+        glow: "0 0 0 1px rgba(0, 0, 0, 0.08)",
+        glass:
+          "0px 1px 1px rgba(0, 0, 0, 0.03), 0px 2px 2px rgba(0, 0, 0, 0.04), inset 0 0 0 1px rgba(0, 0, 0, 0.08)",
+        float:
+          "0px 2px 2px rgba(0, 0, 0, 0.04), 0px 8px 16px -4px rgba(0, 0, 0, 0.06), inset 0 0 0 1px rgba(0, 0, 0, 0.08)"
       },
       backgroundImage: {
-        "store-radial": "radial-gradient(circle at 20% 10%, rgba(56, 189, 248, 0.14), transparent 30%), radial-gradient(circle at 80% 0%, rgba(168, 85, 247, 0.12), transparent 28%), linear-gradient(180deg, #0a0a0a 0%, #0d0d0f 45%, #09090b 100%)"
+        "store-radial":
+          "radial-gradient(circle at 20% 8%, rgba(0, 124, 240, 0.18), transparent 28%), radial-gradient(circle at 58% 4%, rgba(121, 40, 202, 0.16), transparent 26%), radial-gradient(circle at 84% 10%, rgba(255, 77, 77, 0.16), transparent 25%), linear-gradient(180deg, #fafafa 0%, #ffffff 48%, #fafafa 100%)",
+        "mesh-hero":
+          "radial-gradient(circle at 16% 20%, rgba(0, 124, 240, 0.38), transparent 27%), radial-gradient(circle at 43% 10%, rgba(0, 223, 216, 0.28), transparent 25%), radial-gradient(circle at 68% 20%, rgba(121, 40, 202, 0.32), transparent 28%), radial-gradient(circle at 86% 34%, rgba(255, 0, 128, 0.24), transparent 24%), radial-gradient(circle at 60% 70%, rgba(249, 203, 40, 0.24), transparent 30%)"
       }
     }
   },

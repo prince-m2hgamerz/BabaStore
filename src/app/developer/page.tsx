@@ -31,7 +31,7 @@ export default async function DeveloperDashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-white/55">
+            <p className="text-sm text-neutral-600">
               R2 direct upload, APK metadata validation, and publish preview are
               scheduled for Phase 3.
             </p>
@@ -41,4 +41,3 @@ export default async function DeveloperDashboardPage() {
     </DashboardShell>
   );
 }
-

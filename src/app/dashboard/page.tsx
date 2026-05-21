@@ -18,7 +18,7 @@ export default async function UserDashboardPage() {
       <div className="grid gap-4">
         {missingEnv ? <EnvWarning /> : null}
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/40" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
           <Input className="pl-9" placeholder="Search BabaStore..." />
         </div>
         <div className="grid gap-4 md:grid-cols-3">
@@ -31,9 +31,8 @@ export default async function UserDashboardPage() {
             <CardTitle>For You</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-white/55">
-              App feeds connect in Phase 2 after the app catalog and download
-              flow are implemented.
+            <p className="text-sm text-neutral-600">
+              App feeds now use the Phase 2 catalog browsing and download flow.
             </p>
           </CardContent>
         </Card>
@@ -41,4 +40,3 @@ export default async function UserDashboardPage() {
     </DashboardShell>
   );
 }
-

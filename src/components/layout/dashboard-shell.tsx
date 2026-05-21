@@ -59,14 +59,14 @@ export function DashboardShell({
 
   return (
     <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-white/10 bg-neutral-950/65 p-5 backdrop-blur-xl lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-neutral-200 bg-white p-5 shadow-glass lg:block">
         <Logo />
         <nav className="mt-8 grid gap-1">
           {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-white/68 transition hover:bg-white/10 hover:text-white"
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
             >
               <item.icon className="size-4" />
               {item.label}
@@ -75,14 +75,14 @@ export function DashboardShell({
         </nav>
       </aside>
       <main className="lg:pl-72">
-        <header className="border-b border-white/10 bg-neutral-950/50 backdrop-blur-xl">
+        <header className="border-b border-neutral-200 bg-white/85 backdrop-blur-xl">
           <div className="flex min-h-20 items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
             <div>
-              <p className="text-sm text-white/45">BabaSwift AppStore</p>
-              <h1 className="text-2xl font-semibold tracking-normal text-white">
+              <p className="mono-label">BabaSwift AppStore</p>
+              <h1 className="text-2xl font-semibold tracking-normal text-neutral-950">
                 {title}
               </h1>
-              <p className="mt-1 max-w-2xl text-sm text-white/55">
+              <p className="mt-1 max-w-2xl text-sm text-neutral-600">
                 {description}
               </p>
             </div>
@@ -95,12 +95,12 @@ export function DashboardShell({
           {children}
         </div>
       </main>
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-neutral-950/80 p-2 backdrop-blur-xl lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-neutral-200 bg-white/90 p-2 shadow-float backdrop-blur-xl lg:hidden">
         {nav.slice(0, 4).map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="flex flex-col items-center gap-1 rounded-md px-2 py-1.5 text-[11px] text-white/60"
+            className="flex flex-col items-center gap-1 rounded-md px-2 py-1.5 text-[11px] text-neutral-600"
           >
             <item.icon className="size-4" />
             {item.label}

@@ -62,7 +62,7 @@ export function RegisterForm() {
         {pending ? <Loader2 className="animate-spin" /> : <ArrowRight />}
         Create account
       </Button>
-      <p className="text-center text-xs text-white/45">
+      <p className="text-center text-xs text-neutral-500">
         Already registered?{" "}
         <Link href="/login" className="text-primary hover:text-primary/80">
           Sign in
@@ -71,4 +71,3 @@ export function RegisterForm() {
     </form>
   );
 }
-

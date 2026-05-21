@@ -15,14 +15,13 @@ export function StatCard({
   return (
     <Card className="glass-hover">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-white/62">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-neutral-600">{title}</CardTitle>
         <Icon className="size-4 text-primary" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-semibold text-white">{value}</div>
-        <p className="mt-1 text-xs text-white/45">{helper}</p>
+        <div className="text-2xl font-semibold text-neutral-950">{value}</div>
+        <p className="mt-1 text-xs text-neutral-500">{helper}</p>
       </CardContent>
     </Card>
   );
 }
-
