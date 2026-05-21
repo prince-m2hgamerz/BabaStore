@@ -12,10 +12,22 @@ export function ScreenshotCarousel({
   screenshots: string[];
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const safeScreenshots = useMemo(
-    () => (screenshots.length ? screenshots : ["linear-gradient(135deg, #fafafa, #ebebeb)"]),
-    [screenshots]
-  );
+  const safeScreenshots = useMemo(() => screenshots, [screenshots]);
+
+  if (!safeScreenshots.length) {
+    return (
+      <div className="rounded-lg border border-neutral-200 bg-white p-8 shadow-float">
+        <div className="grid aspect-[16/9] place-items-center rounded-md border border-dashed border-neutral-200 bg-neutral-50 text-center">
+          <div>
+            <ImageIcon className="mx-auto size-5 text-neutral-400" />
+            <p className="mt-2 text-sm text-neutral-500">
+              No screenshots uploaded yet.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const active = safeScreenshots[activeIndex];
 
@@ -33,17 +45,13 @@ export function ScreenshotCarousel({
 
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-3 shadow-float">
-      <div
-        className="relative grid aspect-[16/9] place-items-center overflow-hidden rounded-md border border-neutral-200"
-        style={{ background: active }}
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,255,255,0.38),transparent_30%)]" />
-        <div className="relative rounded-md border border-white/20 bg-white/75 px-4 py-3 text-center shadow-glass backdrop-blur-sm">
-          <ImageIcon className="mx-auto size-5 text-neutral-500" />
-          <p className="mt-2 text-sm font-medium text-neutral-950">
-            {appName} screenshot {activeIndex + 1}
-          </p>
-        </div>
+      <div className="relative grid aspect-[16/9] place-items-center overflow-hidden rounded-md border border-neutral-200 bg-neutral-50">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={active}
+          alt={`${appName} screenshot ${activeIndex + 1}`}
+          className="h-full w-full object-contain"
+        />
         {safeScreenshots.length > 1 ? (
           <>
             <Button
@@ -74,15 +82,20 @@ export function ScreenshotCarousel({
           <button
             key={`${screenshot}-${index}`}
             type="button"
-            className="h-16 w-24 shrink-0 rounded-md border border-neutral-200 shadow-glass outline-none transition focus:ring-2 focus:ring-blue-500/20 data-[active=true]:border-neutral-950"
-            style={{ background: screenshot }}
+            className="h-16 w-24 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-50 shadow-glass outline-none transition focus:ring-2 focus:ring-blue-500/20 data-[active=true]:border-neutral-950"
             data-active={index === activeIndex}
             onClick={() => setActiveIndex(index)}
             aria-label={`Show screenshot ${index + 1}`}
-          />
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={screenshot}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          </button>
         ))}
       </div>
     </div>
   );
 }
-

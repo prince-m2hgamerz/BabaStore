@@ -17,9 +17,9 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-4">
         {missingEnv ? <EnvWarning /> : null}
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="Apps awaiting review" value="0" helper="Queue starts Phase 4" icon={ShieldCheck} />
+          <StatCard title="Apps awaiting review" value="0" helper="Queue updates from app submissions" icon={ShieldCheck} />
           <StatCard title="Users" value="0" helper="Supabase profiles table" icon={Users} />
-          <StatCard title="Storage usage" value="0 MB" helper="R2 monitor starts Phase 4" icon={Database} />
+          <StatCard title="Storage usage" value="0 MB" helper="Tracked from uploaded APK assets" icon={Database} />
         </div>
         <Card>
           <CardHeader>
@@ -28,7 +28,7 @@ export default async function AdminDashboardPage() {
           <CardContent>
             <p className="text-sm text-neutral-600">
               Approve, reject, flag, and bulk moderation workflows are reserved
-              for Phase 4 after app submissions exist.
+              until submitted apps exist in the database.
             </p>
           </CardContent>
         </Card>

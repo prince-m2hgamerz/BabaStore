@@ -50,7 +50,7 @@ export async function generateMetadata({
 
   return {
     title: app.name,
-    description: app.summary
+    description: app.summary ?? app.description
   };
 }
 
@@ -68,12 +68,15 @@ export default async function AppDetailPage({
 
   const apps = await getCatalogApps();
   const similarApps = filterCatalogApps(apps, {
-    category: app.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    category: app.categorySlug,
     sort: "rating"
   })
     .filter((item) => item.id !== app.id)
     .slice(0, 4);
   const metrics = appMetrics(app);
+  const hasRating = app.rating !== null;
+  const similarFallback = apps.filter((item) => item.id !== app.id).slice(0, 4);
+  const relatedApps = similarApps.length ? similarApps : similarFallback;
 
   return (
     <div className="min-h-screen">
@@ -93,6 +96,7 @@ export default async function AppDetailPage({
                 <AppIcon
                   name={app.name}
                   accent={app.accent}
+                  src={app.iconUrl}
                   className="size-28 text-4xl"
                 />
                 <div className="min-w-0">
@@ -105,14 +109,14 @@ export default async function AppDetailPage({
                       Published
                     </Badge>
                   </div>
-                  <h1 className="mt-4 text-5xl font-semibold leading-none tracking-normal text-neutral-950">
+                  <h1 className="mt-4 text-4xl font-semibold leading-none tracking-normal text-neutral-950 sm:text-5xl">
                     {app.name}
                   </h1>
                   <p className="mt-3 text-base text-neutral-600">
                     {app.developer}
                   </p>
                   <p className="mt-5 max-w-2xl text-lg leading-8 text-neutral-600">
-                    {app.summary}
+                    {app.summary ?? app.description}
                   </p>
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                     <InstallButton slug={app.slug} />
@@ -132,7 +136,7 @@ export default async function AppDetailPage({
                 </CardHeader>
                 <CardContent className="grid gap-4">
                   {[
-                    { icon: Star, label: "Rating", value: `${metrics.rating} (${metrics.reviews})` },
+                    { icon: Star, label: "Rating", value: hasRating ? `${metrics.rating} (${metrics.reviews})` : "No ratings" },
                     { icon: Download, label: "Downloads", value: metrics.downloads },
                     { icon: FileArchive, label: "Size", value: metrics.size },
                     { icon: CalendarDays, label: "Updated", value: formatDate(app.updatedAt) },
@@ -161,17 +165,19 @@ export default async function AppDetailPage({
                 <CardTitle>About this app</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
-                <p className="text-base leading-8 text-neutral-600">
+                <p className="whitespace-pre-wrap text-base leading-8 text-neutral-600">
                   {app.description}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {app.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      <Tags className="mr-1 size-3" />
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
+                {app.tags.length ? (
+                  <div className="flex flex-wrap gap-2">
+                    {app.tags.map((tag) => (
+                      <Badge key={tag} variant="secondary">
+                        <Tags className="mr-1 size-3" />
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
 
@@ -195,14 +201,20 @@ export default async function AppDetailPage({
                     </div>
                     <Badge variant="success">Latest</Badge>
                   </div>
-                  <div className="grid gap-3 p-4">
-                    {app.changelog.map((item) => (
-                      <div key={item} className="flex gap-3 text-sm text-neutral-600">
-                        <span className="mt-2 size-1.5 shrink-0 rounded-full bg-neutral-950" />
-                        {item}
-                      </div>
-                    ))}
-                  </div>
+                  {app.changelog.length ? (
+                    <div className="grid gap-3 p-4">
+                      {app.changelog.map((item) => (
+                        <div key={item} className="flex gap-3 text-sm text-neutral-600">
+                          <span className="mt-2 size-1.5 shrink-0 rounded-full bg-neutral-950" />
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="p-4 text-sm leading-6 text-neutral-600">
+                      No release notes have been published for this version.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -211,29 +223,28 @@ export default async function AppDetailPage({
           <aside className="grid h-fit gap-4">
             <Card>
               <CardHeader>
-                <CardTitle>Secure install flow</CardTitle>
+                <CardTitle>Install flow</CardTitle>
                 <CardDescription>
-                  R2 signed URLs plug into the same endpoint.
+                  Downloads are routed through the store endpoint.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm leading-6 text-neutral-600">
-                  The install button routes through BabaStore first. When the app
-                  comes from Supabase, the download event is logged before the
-                  user is redirected to the APK URL.
+                  The install button logs a download event, then redirects to
+                  the APK URL saved by the developer.
                 </p>
                 <Separator />
                 <div className="grid gap-2 text-sm">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span className="text-neutral-500">Package</span>
-                    <span className="font-mono text-xs text-neutral-950">
+                    <span className="break-all font-mono text-xs text-neutral-950">
                       {app.packageName}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-500">Source</span>
                     <span className="text-neutral-950">
-                      {app.apkUrl ? "Configured" : "Pending"}
+                      {app.apkUrl ? "Configured" : "Missing"}
                     </span>
                   </div>
                 </div>
@@ -242,56 +253,64 @@ export default async function AppDetailPage({
 
             <Card>
               <CardHeader>
-                <CardTitle>Ratings preview</CardTitle>
+                <CardTitle>Ratings</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-end gap-3">
-                  <span className="text-5xl font-semibold tracking-normal text-neutral-950">
-                    {metrics.rating}
-                  </span>
-                  <div className="pb-2">
-                    <div className="flex text-amber-400">
-                      {Array.from({ length: 5 }).map((_, index) => (
-                        <Star
-                          key={index}
-                          className="size-4 fill-current"
-                        />
-                      ))}
+                {hasRating ? (
+                  <div className="flex items-end gap-3">
+                    <span className="text-5xl font-semibold tracking-normal text-neutral-950">
+                      {metrics.rating}
+                    </span>
+                    <div className="pb-2">
+                      <div className="flex text-amber-400">
+                        {Array.from({ length: 5 }).map((_, index) => (
+                          <Star
+                            key={index}
+                            className={
+                              index < Math.round(app.rating ?? 0)
+                                ? "size-4 fill-current"
+                                : "size-4 text-neutral-300"
+                            }
+                          />
+                        ))}
+                      </div>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        {metrics.reviews} reviews
+                      </p>
                     </div>
-                    <p className="mt-1 text-xs text-neutral-500">
-                      {metrics.reviews} reviews
-                    </p>
                   </div>
-                </div>
-                <p className="mt-4 text-sm leading-6 text-neutral-600">
-                  Full reviews, rating aggregation, and developer replies start
-                  in Phase 5.
-                </p>
+                ) : (
+                  <p className="text-sm leading-6 text-neutral-600">
+                    No users have rated this app yet.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </aside>
         </section>
 
-        <section className="page-shell pb-16">
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="mono-label">SIMILAR APPS</p>
-              <h2 className="mt-1 text-2xl font-semibold tracking-normal text-neutral-950">
-                More in {app.category}.
-              </h2>
+        {relatedApps.length ? (
+          <section className="page-shell pb-16">
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p className="mono-label">SIMILAR APPS</p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-normal text-neutral-950">
+                  More in {app.category}.
+                </h2>
+              </div>
+              <Button variant="secondary" size="sm" asChild>
+                <Link href={`/?category=${app.categorySlug}`}>
+                  View category
+                </Link>
+              </Button>
             </div>
-            <Button variant="secondary" size="sm" asChild>
-              <Link href={`/?category=${app.category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
-                View category
-              </Link>
-            </Button>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {(similarApps.length ? similarApps : apps.filter((item) => item.id !== app.id).slice(0, 4)).map((item) => (
-              <AppCard key={item.id} app={item} compact />
-            ))}
-          </div>
-        </section>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {relatedApps.map((item) => (
+                <AppCard key={item.id} app={item} compact />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </main>
     </div>
   );

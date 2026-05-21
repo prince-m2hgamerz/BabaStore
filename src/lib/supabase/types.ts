@@ -63,6 +63,7 @@ export type Database = {
           apk_url?: string | null;
           icon_url?: string | null;
           status?: AppStatus;
+          updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["apps"]["Insert"]>;
         Relationships: [
@@ -99,6 +100,103 @@ export type Database = {
         };
         Update: Partial<Database["public"]["Tables"]["categories"]["Insert"]>;
         Relationships: [];
+      };
+      app_versions: {
+        Row: {
+          id: string;
+          app_id: string;
+          version_name: string;
+          version_code: number | null;
+          apk_url: string | null;
+          apk_size: number | null;
+          changelog: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          app_id: string;
+          version_name: string;
+          version_code?: number | null;
+          apk_url?: string | null;
+          apk_size?: number | null;
+          changelog?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["app_versions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "app_versions_app_id_fkey";
+            columns: ["app_id"];
+            isOneToOne: false;
+            referencedRelation: "apps";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      app_screenshots: {
+        Row: {
+          id: string;
+          app_id: string;
+          image_url: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          app_id: string;
+          image_url: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["app_screenshots"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "app_screenshots_app_id_fkey";
+            columns: ["app_id"];
+            isOneToOne: false;
+            referencedRelation: "apps";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      reviews: {
+        Row: {
+          id: string;
+          app_id: string;
+          user_id: string;
+          rating: number;
+          body: string | null;
+          developer_response: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          app_id: string;
+          user_id: string;
+          rating: number;
+          body?: string | null;
+          developer_response?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["reviews"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "reviews_app_id_fkey";
+            columns: ["app_id"];
+            isOneToOne: false;
+            referencedRelation: "apps";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reviews_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       downloads: {
         Row: {

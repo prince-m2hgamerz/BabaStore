@@ -22,8 +22,8 @@ export default async function UserDashboardPage() {
           <Input className="pl-9" placeholder="Search BabaStore..." />
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="Downloaded apps" value="0" helper="Tracked after Phase 2" icon={Download} />
-          <StatCard title="Wishlist" value="0" helper="Enabled in Phase 5" icon={Heart} />
+          <StatCard title="Downloaded apps" value="0" helper="Tracked from install activity" icon={Download} />
+          <StatCard title="Wishlist" value="0" helper="Saved app list" icon={Heart} />
           <StatCard title="Account state" value="Ready" helper="Protected route active" icon={ShieldCheck} />
         </div>
         <Card>
@@ -32,7 +32,7 @@ export default async function UserDashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-neutral-600">
-              App feeds now use the Phase 2 catalog browsing and download flow.
+              Public app feeds use the live catalog browsing and download flow.
             </p>
           </CardContent>
         </Card>

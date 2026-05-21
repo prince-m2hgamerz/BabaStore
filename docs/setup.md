@@ -1,4 +1,4 @@
-# BabaStore Phase 1 Setup
+# BabaStore Setup
 
 ## Environment
 
@@ -33,16 +33,12 @@ set role = 'admin'
 where email = 'admin@example.com';
 ```
 
-## Phase Status
-
-Phase 1 includes:
+## Current Scope
 
 - Next.js App Router foundation
-- Dark glass design system
+- Light Vercel-style design system
 - Supabase auth actions
 - Protected route middleware
 - User, developer, and admin route guards
 - Initial schema and RLS policies
-
-R2 uploads, APK downloads, catalog browsing, and analytics begin in later phases.
-
+- Catalog browsing, APK downloads, and developer upload flows are now wired to live data.

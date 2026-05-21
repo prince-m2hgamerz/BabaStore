@@ -3,15 +3,18 @@ export type CatalogApp = {
   slug: string;
   name: string;
   developer: string;
+  developerId: string;
   packageName: string;
   version: string;
   category: string;
-  summary: string;
+  categorySlug: string;
+  summary: string | null;
   description: string;
-  rating: number;
+  privacyPolicyUrl: string | null;
+  rating: number | null;
   reviews: number;
   downloads: number;
-  sizeMb: number;
+  sizeBytes: number | null;
   updatedAt: string;
   apkUrl: string | null;
   iconUrl: string | null;
@@ -19,7 +22,7 @@ export type CatalogApp = {
   tags: string[];
   screenshots: string[];
   changelog: string[];
-  status: "published";
+  status: "draft" | "published" | "rejected" | "flagged";
 };
 
 export type CatalogFilters = {
@@ -36,4 +39,3 @@ export type CategorySummary = {
   slug: string;
   count: number;
 };
-

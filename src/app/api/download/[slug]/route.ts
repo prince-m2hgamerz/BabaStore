@@ -15,8 +15,7 @@ export async function GET(
 
   if (
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-    !app.id.startsWith("seed-")
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ) {
     try {
       const supabase = await createClient();
@@ -43,4 +42,3 @@ export async function GET(
 
   return NextResponse.redirect(app.apkUrl);
 }
-

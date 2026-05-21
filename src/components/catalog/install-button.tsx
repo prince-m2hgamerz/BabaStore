@@ -12,4 +12,3 @@ export function InstallButton({ slug }: { slug: string }) {
     </Button>
   );
 }
-
