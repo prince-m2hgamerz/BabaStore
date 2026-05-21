@@ -1,0 +1,174 @@
+# PRD: BabaSwift AppStore - Custom Android App Store Platform
+
+**Version:** 1.0  
+**Date:** May 22, 2026  
+**Author:** BabaStore  
+**Status:** Complete for Development
+
+## 1. Product Overview
+
+A full-featured web-based Android app store clone with Play Store-like UX. Users can browse, search, download APKs. Developers can upload and manage apps. Admins have full control. 
+
+**Core Value Proposition:**  
+- Zero platform fees on downloads (or configurable).  
+- Direct APK hosting on Cloudflare R2 (cheap + fast).  
+- Supabase backend + Resend auth.  
+- Modern dark glassmorphism UI inspired by Vercel.
+
+**Target Users:**
+- End Users (download apps)
+- Developers (upload & monetize)
+- Admins (moderate platform)
+
+## 2. Tech Stack (Fixed)
+
+- **Frontend:** Next.js 15 (App Router) + TypeScript + Tailwind CSS + shadcn/ui
+- **UI Theme:** Vercel-inspired dark theme + heavy glassmorphism (transparent frosted cards, blur effects, neon accents)
+- **Backend:** Supabase (PostgreSQL, Auth, Storage proxy if needed)
+- **File Storage:** Cloudflare R2 (for APKs + screenshots + icons)
+- **Auth:** Email + Password + Resend (email confirmation, password reset)
+- **Emails:** Resend
+- **Other:** Zod validation, TanStack Query, React Hook Form, Framer Motion
+
+## 3. User Roles & Dashboards
+
+### 3.1 User Dashboard (Play Store style)
+- Home feed (Featured, Trending, Categories, New Releases)
+- Search with filters (category, rating, size, updated date)
+- App detail page (screenshots carousel, description, version history, reviews, "Install" button)
+- My Apps (installed/downloaded history)
+- Wishlist
+- Profile & Settings
+- Download manager (progress + resume support via R2 signed URLs)
+
+### 3.2 Developer Dashboard
+- My Apps list
+- Upload new APK (multi-version support)
+- App metadata editor (name, description, category, tags, privacy policy URL, etc.)
+- Screenshots & icon uploader
+- Analytics (downloads, installs, ratings)
+- Revenue reports (if monetization added later)
+- Version management & changelog
+- Publish / Unpublish toggle
+
+### 3.3 Admin Dashboard
+- All Apps moderation (approve/reject/flag)
+- Users management (ban, verify)
+- Developers management
+- Categories management
+- Global announcements
+- Analytics dashboard (total downloads, active users, storage usage)
+- Reports & logs
+- R2 storage usage monitor
+
+## 4. Key Features & Flows (Phased)
+
+### Phase 1: Foundation & Auth (Week 1-2)
+- Supabase project setup (DB schema, RLS policies)
+- Resend integration for:
+  - Email confirmation
+  - Password reset
+  - Welcome emails
+- Auth pages: Login, Register, Forgot Password (glassmorphism forms)
+- Protected routes middleware
+- Role-based access (user/developer/admin) – stored in Supabase profiles table
+- Design system setup (design.md equivalent – dark theme, glass cards, hover effects, mobile responsive)
+
+**Database Tables (initial):**
+- profiles (id, role, email, username, avatar)
+- apps (id, developer_id, name, package_name, version, apk_url, icon_url, status: draft/published/rejected)
+- app_versions
+- app_screenshots
+- categories
+- reviews
+- downloads (tracking)
+
+### Phase 2: Core App Browsing & Download (Week 2-3)
+- Public homepage mimicking Play Store (hero banner, tabs: For You, Top Charts, Categories)
+- Infinite scroll + search + filters
+- App detail page with:
+  - Glassmorphism info cards
+  - Image carousel (screenshots)
+  - "Install" button → direct R2 signed URL download
+- Download logging
+- Responsive mobile-first UI (PWA ready)
+
+### Phase 3: Developer Features (Week 3-4)
+- Developer portal with sidebar navigation
+- APK upload (large file support via R2 direct upload or presigned URLs)
+- Metadata form with rich text editor (description)
+- Auto package name validation
+- Versioning system
+- Preview before publish
+
+### Phase 4: Admin Panel & Moderation (Week 4-5)
+- Separate /admin route (role guard)
+- Review queue for new apps
+- Bulk actions
+- Basic analytics (use Supabase + simple charts with Recharts)
+
+### Phase 5: Polish, Reviews & Analytics (Week 5-6)
+- User reviews & ratings system
+- Rating aggregation
+- Developer response to reviews
+- Basic search ranking
+- Wishlist
+- "Similar apps" section
+- Dark glassmorphism perfection (blur-3xl, border opacity, etc.)
+
+### Phase 6: Advanced & Launch (Week 6-7)
+- PWA installation support
+- Download verification (hash check optional)
+- Rate limiting & abuse prevention
+- SEO (Next.js metadata, sitemaps)
+- Analytics integration (PostHog or Umami)
+- Error monitoring (Sentry)
+- Final testing & deployment
+
+## 5. UI/UX Requirements (design.md style)
+
+- **Theme:** Pure dark (#0A0A0A base) + glassmorphism (`backdrop-blur-xl bg-white/5 border border-white/10`)
+- Vercel-like typography (Inter/Satoshi)
+- Neon accents on primary actions (purple/blue)
+- Smooth animations (Framer Motion)
+- Play Store layout:
+  - Top nav with search + avatar
+  - Bottom nav on mobile
+  - Card grid for apps
+- All pages fully responsive
+
+## 6. Non-Functional Requirements
+- Fast loading (R2 + Next.js edge)
+- Secure downloads (time-limited signed URLs)
+- RLS on Supabase (developers can only edit own apps)
+- File size limits (configurable, e.g., 200MB per APK)
+- Virus scanning recommendation (later via API)
+- GDPR ready (data export, delete)
+
+## 7. Future Phases (Post MVP)
+- In-app purchases / subscriptions for developers
+- Paid apps + revenue share
+- Comments system
+- Push notifications (web)
+- iOS IPA support
+- API for third-party clients
+- AI app recommendations
+
+## 8. Acceptance Criteria
+- All dashboards functional per role
+- Successful APK upload → public download works
+- Glassmorphism UI matches reference screenshots (Vercel + Play Store hybrid)
+- Email flows tested
+- Mobile experience excellent
+
+**Deployment:**
+- Vercel (frontend)
+- Supabase
+- Cloudflare R2 + custom domain
+
+---
+
+**Instructions for Agent:**  
+Build strictly in the phases above. Start with Phase 1. After each phase, commit to Git with clear messages. Use shadcn/ui components heavily. Ask Baba Swift if any clarification needed.
+
+End of PRD.
