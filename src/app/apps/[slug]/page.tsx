@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { siteConfig } from "@/lib/constants";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -56,9 +57,25 @@ export async function generateMetadata({
     };
   }
 
+  const siteUrl = siteConfig.url.replace(/\/$/, "");
+  const appUrl = `${siteUrl}/apps/${app.slug}`;
+
   return {
-    title: app.name,
-    description: app.summary ?? app.description
+    title: `${app.name} — ${app.developer}`,
+    description: app.summary ?? app.description?.slice(0, 160),
+    keywords: [app.category, app.developer, ...app.tags, "Android APK", "free download"],
+    alternates: { canonical: appUrl },
+    openGraph: {
+      type: "website",
+      title: `${app.name} — ${app.developer}`,
+      description: app.summary ?? app.description?.slice(0, 160),
+      url: appUrl
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${app.name} — ${app.developer}`,
+      description: app.summary ?? app.description?.slice(0, 160)
+    }
   };
 }
 
@@ -100,8 +117,42 @@ export default async function AppDetailPage({
     getCatalogAssetProxy({ source: app.source, slug: app.slug, asset: "screenshot", index }) ?? screenshot
   );
 
+  const appJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: app.name,
+    description: app.summary ?? app.description,
+    url: `${siteConfig.url.replace(/\/$/, "")}/apps/${app.slug}`,
+    applicationCategory: app.category,
+    operatingSystem: "Android",
+    author: {
+      "@type": "Organization",
+      name: app.developer
+    },
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD"
+    },
+    ...(app.rating
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: app.rating,
+            ratingCount: app.reviews
+          }
+        }
+      : {}),
+    ...(app.iconUrl ? { image: app.iconUrl } : {}),
+    ...(app.apkUrl ? { fileSize: app.sizeBytes?.toString() } : {})
+  };
+
   return (
     <div className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(appJsonLd) }}
+      />
       <TopNav />
       <main>
         <section className="relative overflow-hidden border-b border-neutral-200 bg-white">
