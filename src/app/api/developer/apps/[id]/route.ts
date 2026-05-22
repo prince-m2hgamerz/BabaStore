@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { appUpdateSchema } from "@/lib/validators/developer";
@@ -43,6 +44,7 @@ export async function PUT(
   }
 
   const input = parsed.data;
+  const nextStatus = profile.role === "admin" ? input.status : "draft";
   const supabase = await createClient();
   const { data: app, error: appError } = await supabase
     .from("apps")
@@ -68,7 +70,7 @@ export async function PUT(
       tags: input.tags,
       privacy_policy_url: input.privacyPolicyUrl,
       icon_url: input.iconUrl,
-      status: input.status,
+      status: nextStatus,
       updated_at: new Date().toISOString()
     })
     .eq("id", id);
@@ -95,5 +97,49 @@ export async function PUT(
     }
   }
 
+  revalidateTag("catalog");
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const { profile, missingEnv } = await getCurrentProfile();
+
+  if (missingEnv) {
+    return NextResponse.json(
+      { error: "Supabase environment variables are missing." },
+      { status: 503 }
+    );
+  }
+
+  if (!profile || !["developer", "admin"].includes(profile.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const supabase = await createClient();
+  const { data: app, error: appError } = await supabase
+    .from("apps")
+    .select("id, developer_id")
+    .eq("id", id)
+    .single();
+
+  if (appError || !app) {
+    return NextResponse.json({ error: "App not found." }, { status: 404 });
+  }
+
+  if (app.developer_id !== profile.id && profile.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { error } = await supabase.from("apps").delete().eq("id", id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  revalidateTag("catalog");
   return NextResponse.json({ ok: true });
 }

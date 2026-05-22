@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import { normalizeSlug } from "@/lib/catalog/catalog";
+import type { UserRole } from "@/lib/constants";
 
 type AppRow = Database["public"]["Tables"]["apps"]["Row"];
 type AppVersionRow = Database["public"]["Tables"]["app_versions"]["Row"];
@@ -50,6 +51,7 @@ export type DeveloperAppSummary = {
 };
 
 export type DeveloperAppDetail = DeveloperAppSummary & {
+  viewerRole: UserRole;
   developerName: string;
   developerEmail: string;
   categoryId: string | null;
@@ -141,16 +143,24 @@ function sum(values: number[]) {
   return values.reduce((total, value) => total + value, 0);
 }
 
-export async function getDeveloperOverview(developerId: string): Promise<DeveloperOverview> {
+export async function getDeveloperOverview(
+  developerId: string,
+  role: UserRole = "developer"
+): Promise<DeveloperOverview> {
   try {
     const supabase = await createClient();
-    const { data: appsData, error: appsError } = await supabase
+    let appsQuery = supabase
       .from("apps")
       .select(
         "id, developer_id, name, package_name, version, description, tags, privacy_policy_url, apk_url, icon_url, status, created_at, updated_at, category_id, categories(name, slug)"
       )
-      .eq("developer_id", developerId)
       .order("updated_at", { ascending: false });
+
+    if (role !== "admin") {
+      appsQuery = appsQuery.eq("developer_id", developerId);
+    }
+
+    const { data: appsData, error: appsError } = await appsQuery;
 
     if (appsError || !appsData) {
       return emptyOverview();
@@ -248,17 +258,23 @@ export async function getDeveloperOverview(developerId: string): Promise<Develop
 
 export async function getDeveloperApp(
   developerId: string,
-  idOrSlug: string
+  idOrSlug: string,
+  role: UserRole = "developer"
 ): Promise<DeveloperAppDetail | null> {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
+    let appQuery = supabase
       .from("apps")
       .select(
         "id, developer_id, name, package_name, version, description, tags, privacy_policy_url, apk_url, icon_url, status, created_at, updated_at, category_id, categories(name, slug, description), profiles(username, email)"
       )
-      .eq("developer_id", developerId)
       .order("updated_at", { ascending: false });
+
+    if (role !== "admin") {
+      appQuery = appQuery.eq("developer_id", developerId);
+    }
+
+    const { data, error } = await appQuery;
 
     if (error || !data?.length) {
       return null;
@@ -299,6 +315,7 @@ export async function getDeveloperApp(
         screenshots: screenshots.length,
         versions: versions.length
       }, latestVersion),
+      viewerRole: role,
       developerName: app.profiles?.username ?? app.profiles?.email ?? "Developer",
       developerEmail: app.profiles?.email ?? "",
       categoryId: app.category_id,

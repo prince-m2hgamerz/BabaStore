@@ -233,6 +233,113 @@ export type Database = {
           }
         ];
       };
+      wishlist_items: {
+        Row: {
+          id: string;
+          user_id: string;
+          app_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          app_id: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["wishlist_items"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_items_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "wishlist_items_app_id_fkey";
+            columns: ["app_id"];
+            isOneToOne: false;
+            referencedRelation: "apps";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      announcements: {
+        Row: {
+          id: string;
+          title: string;
+          body: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          body: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["announcements"]["Insert"]>;
+        Relationships: [];
+      };
+      upload_scans: {
+        Row: {
+          id: string;
+          developer_id: string | null;
+          package_name: string | null;
+          folder: string;
+          file_name: string;
+          file_type: string | null;
+          file_size: number | null;
+          sha256: string;
+          virus_total_status: string;
+          virus_total_source: string | null;
+          virus_total_analysis_id: string | null;
+          malicious_count: number;
+          suspicious_count: number;
+          harmless_count: number;
+          undetected_count: number;
+          timeout_count: number;
+          r2_bucket: string | null;
+          r2_key: string | null;
+          r2_url: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          developer_id?: string | null;
+          package_name?: string | null;
+          folder: string;
+          file_name: string;
+          file_type?: string | null;
+          file_size?: number | null;
+          sha256: string;
+          virus_total_status: string;
+          virus_total_source?: string | null;
+          virus_total_analysis_id?: string | null;
+          malicious_count?: number;
+          suspicious_count?: number;
+          harmless_count?: number;
+          undetected_count?: number;
+          timeout_count?: number;
+          r2_bucket?: string | null;
+          r2_key?: string | null;
+          r2_url?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["upload_scans"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "upload_scans_developer_id_fkey";
+            columns: ["developer_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

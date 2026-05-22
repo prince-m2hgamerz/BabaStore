@@ -1,0 +1,94 @@
+🔍 SEARCH APIs
+
+# Search Apps
+https://babastore.m2hgamerz.workers.dev/api/7/apps/search/query=KEYWORD/limit=10
+
+# Search with Pagination
+https://babastore.m2hgamerz.workers.dev/api/7/apps/search/query=games/limit=20/offset=20
+
+# Search with Language
+https://babastore.m2hgamerz.workers.dev/api/7/apps/search/query=chat/lang=en/limit=10
+
+# Search with Mature Content
+https://babastore.m2hgamerz.workers.dev/api/7/apps/search/query=games/mature=true
+
+---
+
+📦 APP METADATA APIs
+
+# By Package Name
+https://babastore.m2hgamerz.workers.dev/api/7/app/getMeta/package_name=com.whatsapp
+
+# By App ID
+https://babastore.m2hgamerz.workers.dev/api/7/app/getMeta/app_id=123456
+
+# By APK ID
+https://babastore.m2hgamerz.workers.dev/api/7/app/getMeta/apk_id=123456
+
+# By MD5 Hash
+https://babastore.m2hgamerz.workers.dev/api/7/app/getMeta/apk_md5sum=MD5_HASH
+
+# By Package + JWT Token
+https://babastore.m2hgamerz.workers.dev/api/7/app/getMeta/package_name=com.whatsapp&access_token=TOKEN
+
+# Get App Versions
+https://babastore.m2hgamerz.workers.dev/api/7/app/getVersions/package_name=com.whatsapp
+
+---
+
+📋 LIST & STORE APIs
+
+# Trending Apps
+https://babastore.m2hgamerz.workers.dev/api/7/listApps/store_name=apps/limit=10
+
+# Apps from Specific Store
+https://babastore.m2hgamerz.workers.dev/api/7/listApps/store_name=babastore/limit=10
+
+# Get Store Apps
+https://babastore.m2hgamerz.workers.dev/api/7/apps/get/store_name=STORE_NAME
+
+# Store Information
+https://babastore.m2hgamerz.workers.dev/api/7/store/getMeta/store_name=STORE_NAME
+
+---
+
+⭐ EXTRAS APIs
+
+# App Reviews
+https://babastore.m2hgamerz.workers.dev/api/7/reviews/get/package_name=com.whatsapp
+
+# Recommended Apps
+https://babastore.m2hgamerz.workers.dev/api/7/apps/getRecommended/package_name=com.whatsapp
+
+---
+
+🗂️ CATEGORY APIs
+
+# Games
+https://babastore.m2hgamerz.workers.dev/api/7/apps/search/query=games/limit=10
+
+# VPN Apps
+https://babastore.m2hgamerz.workers.dev/api/7/apps/search/query=vpn/limit=10
+
+# AI Apps
+https://babastore.m2hgamerz.workers.dev/api/7/apps/search/query=ai/limit=10
+
+# Social Apps
+https://babastore.m2hgamerz.workers.dev/api/7/apps/search/query=social/limit=10
+
+---
+
+📥 FILE PROXY Routes *(auto-used inside API responses)*
+
+# APK Downloads
+https://babastore.m2hgamerz.workers.dev/apk-proxy/<path>
+
+# App Icons & Graphics
+https://babastore.m2hgamerz.workers.dev/img-proxy/<path>
+
+# Other CDN Files
+https://babastore.m2hgamerz.workers.dev/cdn-proxy/<host>/<path>
+
+---
+
+> 💡 Tip: The /apk-proxy/, /img-proxy/, and /cdn-proxy/ routes are automatically injected into every API response — you don't need to call them manually. They only exist so that links in the JSON actually work.

@@ -7,7 +7,8 @@ import {
   loginSchema,
   registerSchema
 } from "@/lib/validators/auth";
-import { roleHome } from "@/lib/constants";
+import { roleHome, roles, type UserRole } from "@/lib/constants";
+import { canAccessPath } from "@/lib/auth/routes";
 
 export type AuthActionState = {
   ok: boolean;
@@ -23,6 +24,46 @@ function envReady() {
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
+}
+
+function cleanNextPath(value: FormDataEntryValue | null) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  return value.startsWith("/") && !value.startsWith("//") ? value : null;
+}
+
+function isUserRole(value: unknown): value is UserRole {
+  return typeof value === "string" && roles.includes(value as UserRole);
+}
+
+async function getSignedInRole() {
+  const supabase = await createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return "user" satisfies UserRole;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const metadataRole = user.user_metadata?.role;
+  if (isUserRole(profile?.role)) {
+    return profile.role;
+  }
+
+  if (isUserRole(metadataRole)) {
+    return metadataRole;
+  }
+
+  return "user" satisfies UserRole;
 }
 
 export async function loginAction(
@@ -59,7 +100,11 @@ export async function loginAction(
     };
   }
 
-  redirect("/dashboard");
+  const role = await getSignedInRole();
+  const nextPath = cleanNextPath(formData.get("next"));
+
+  const destination = nextPath && canAccessPath(role, nextPath) ? nextPath : roleHome[role];
+  redirect(destination ?? "/login");
 }
 
 export async function registerAction(
@@ -85,6 +130,13 @@ export async function registerAction(
     return {
       ok: false,
       message: parsed.error.issues[0]?.message ?? "Invalid registration details."
+    };
+  }
+
+  if (parsed.data.role === "admin") {
+    return {
+      ok: false,
+      message: "Admin access must be granted from the database."
     };
   }
 

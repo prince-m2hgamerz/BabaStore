@@ -14,12 +14,13 @@ const initialState: AuthActionState = {
   message: ""
 };
 
-export function LoginForm() {
+export function LoginForm({ nextPath = "" }: { nextPath?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
     <form action={formAction} className="grid gap-4">
       <AuthMessage state={state} />
+      {nextPath ? <input type="hidden" name="next" value={nextPath} /> : null}
       <div className="grid gap-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" autoComplete="email" required />
@@ -47,4 +48,3 @@ export function LoginForm() {
     </form>
   );
 }
-

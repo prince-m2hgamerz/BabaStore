@@ -1,5 +1,5 @@
 export const siteConfig = {
-  name: "BabaSwift AppStore",
+  name: "BabaStore",
   shortName: "BabaStore",
   description: "A modern Android app store for users, developers, and admins.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
@@ -23,4 +23,3 @@ export const categorySeeds = [
   "Entertainment",
   "Tools"
 ];
-

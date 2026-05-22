@@ -16,8 +16,8 @@ export function ScreenshotCarousel({
 
   if (!safeScreenshots.length) {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white p-8 shadow-float">
-        <div className="grid aspect-[16/9] place-items-center rounded-md border border-dashed border-neutral-200 bg-neutral-50 text-center">
+      <div className="min-w-0 rounded-lg border border-neutral-200 bg-white p-4 shadow-float sm:p-8">
+        <div className="grid aspect-[4/3] place-items-center rounded-md border border-dashed border-neutral-200 bg-neutral-50 text-center sm:aspect-[16/9]">
           <div>
             <ImageIcon className="mx-auto size-5 text-neutral-400" />
             <p className="mt-2 text-sm text-neutral-500">
@@ -44,13 +44,15 @@ export function ScreenshotCarousel({
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-3 shadow-float">
-      <div className="relative grid aspect-[16/9] place-items-center overflow-hidden rounded-md border border-neutral-200 bg-neutral-50">
+    <div className="min-w-0 rounded-lg border border-neutral-200 bg-white p-2 shadow-float sm:p-3">
+      <div className="relative grid aspect-[10/13] max-h-[60vh] min-h-56 place-items-center overflow-hidden rounded-md border border-neutral-200 bg-neutral-50 sm:aspect-[16/9] sm:max-h-[420px] sm:min-h-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={active}
           alt={`${appName} screenshot ${activeIndex + 1}`}
-          className="h-full w-full object-contain"
+          loading="eager"
+          decoding="async"
+          className="h-full max-h-[60vh] w-full max-w-full object-contain sm:max-h-[420px]"
         />
         {safeScreenshots.length > 1 ? (
           <>
@@ -58,7 +60,7 @@ export function ScreenshotCarousel({
               type="button"
               size="icon"
               variant="secondary"
-              className="absolute left-3 top-1/2 -translate-y-1/2"
+              className="absolute left-1 top-1/2 size-8 -translate-y-1/2 opacity-80 sm:left-3 sm:size-10 sm:opacity-100"
               onClick={previous}
               aria-label="Previous screenshot"
             >
@@ -68,7 +70,7 @@ export function ScreenshotCarousel({
               type="button"
               size="icon"
               variant="secondary"
-              className="absolute right-3 top-1/2 -translate-y-1/2"
+              className="absolute right-1 top-1/2 size-8 -translate-y-1/2 opacity-80 sm:right-3 sm:size-10 sm:opacity-100"
               onClick={next}
               aria-label="Next screenshot"
             >
@@ -77,12 +79,12 @@ export function ScreenshotCarousel({
           </>
         ) : null}
       </div>
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+      <div className="mt-2 flex max-w-full gap-1.5 overflow-x-auto pb-1 sm:mt-3 sm:gap-2">
         {safeScreenshots.map((screenshot, index) => (
           <button
             key={`${screenshot}-${index}`}
             type="button"
-            className="h-16 w-24 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-50 shadow-glass outline-none transition focus:ring-2 focus:ring-blue-500/20 data-[active=true]:border-neutral-950"
+            className="h-12 w-16 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-50 shadow-glass outline-none transition focus:ring-2 focus:ring-blue-500/20 data-[active=true]:border-neutral-950 sm:h-16 sm:w-24"
             data-active={index === activeIndex}
             onClick={() => setActiveIndex(index)}
             aria-label={`Show screenshot ${index + 1}`}
@@ -91,6 +93,8 @@ export function ScreenshotCarousel({
             <img
               src={screenshot}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover"
             />
           </button>

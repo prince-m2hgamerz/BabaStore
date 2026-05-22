@@ -13,7 +13,7 @@ import { StatusBadge } from "@/components/developer/status-badge";
 export default async function DeveloperDashboardPage() {
   const { missingEnv, profile } = await requireRole(["developer", "admin"]);
   const overview = profile
-    ? await getDeveloperOverview(profile.id)
+    ? await getDeveloperOverview(profile.id, profile.role)
     : {
         apps: [],
         recentVersions: [],

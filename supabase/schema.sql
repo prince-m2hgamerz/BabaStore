@@ -1,4 +1,4 @@
--- BabaSwift AppStore Phase 1 schema
+-- BabaStore Phase 1 schema
 -- Run this in the Supabase SQL editor after creating the project.
 
 create extension if not exists "pgcrypto";
@@ -81,6 +81,46 @@ create table public.downloads (
   created_at timestamptz not null default now()
 );
 
+create table public.wishlist_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  app_id uuid not null references public.apps(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (user_id, app_id)
+);
+
+create table public.announcements (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  body text not null,
+  is_active boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.upload_scans (
+  id uuid primary key default gen_random_uuid(),
+  developer_id uuid references public.profiles(id) on delete set null,
+  package_name text,
+  folder text not null,
+  file_name text not null,
+  file_type text,
+  file_size bigint,
+  sha256 text not null,
+  virus_total_status text not null,
+  virus_total_source text,
+  virus_total_analysis_id text,
+  malicious_count integer not null default 0,
+  suspicious_count integer not null default 0,
+  harmless_count integer not null default 0,
+  undetected_count integer not null default 0,
+  timeout_count integer not null default 0,
+  r2_bucket text,
+  r2_key text,
+  r2_url text,
+  created_at timestamptz not null default now()
+);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -101,6 +141,10 @@ for each row execute function public.set_updated_at();
 
 create trigger reviews_set_updated_at
 before update on public.reviews
+for each row execute function public.set_updated_at();
+
+create trigger announcements_set_updated_at
+before update on public.announcements
 for each row execute function public.set_updated_at();
 
 create or replace function public.handle_new_user()
@@ -132,6 +176,9 @@ alter table public.app_versions enable row level security;
 alter table public.app_screenshots enable row level security;
 alter table public.reviews enable row level security;
 alter table public.downloads enable row level security;
+alter table public.wishlist_items enable row level security;
+alter table public.announcements enable row level security;
+alter table public.upload_scans enable row level security;
 
 create or replace function public.current_role()
 returns public.user_role
@@ -181,6 +228,10 @@ create policy "developers update own apps"
 on public.apps for update
 using (developer_id = auth.uid() or public.current_role() = 'admin')
 with check (developer_id = auth.uid() or public.current_role() = 'admin');
+
+create policy "developers delete own apps"
+on public.apps for delete
+using (developer_id = auth.uid() or public.current_role() = 'admin');
 
 create policy "app versions follow app access"
 on public.app_versions for select
@@ -253,9 +304,45 @@ create policy "admins read downloads"
 on public.downloads for select
 using (public.current_role() = 'admin');
 
+create policy "users read own downloads"
+on public.downloads for select
+using (user_id = auth.uid() or public.current_role() = 'admin');
+
 create policy "download logs can be created by app"
 on public.downloads for insert
 with check (true);
+
+create policy "users read own wishlist"
+on public.wishlist_items for select
+using (user_id = auth.uid() or public.current_role() = 'admin');
+
+create policy "users save own wishlist"
+on public.wishlist_items for insert
+with check (user_id = auth.uid());
+
+create policy "users remove own wishlist"
+on public.wishlist_items for delete
+using (user_id = auth.uid() or public.current_role() = 'admin');
+
+create policy "active announcements are public"
+on public.announcements for select
+using (is_active = true or public.current_role() = 'admin');
+
+create policy "admins manage announcements"
+on public.announcements for all
+using (public.current_role() = 'admin')
+with check (public.current_role() = 'admin');
+
+create policy "admins read upload scans"
+on public.upload_scans for select
+using (public.current_role() = 'admin' or developer_id = auth.uid());
+
+create policy "developers create own upload scans"
+on public.upload_scans for insert
+with check (
+  developer_id = auth.uid()
+  and public.current_role() in ('developer', 'admin')
+);
 
 insert into public.categories (name, slug, description)
 values
@@ -266,4 +353,3 @@ values
   ('Entertainment', 'entertainment', 'Video, audio, media, and streaming apps.'),
   ('Tools', 'tools', 'Utilities, security, launchers, and device helpers.')
 on conflict (slug) do nothing;
-

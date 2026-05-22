@@ -9,7 +9,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 RESEND_API_KEY=your-resend-key
-RESEND_FROM_EMAIL="BabaSwift AppStore <noreply@your-domain.com>"
+RESEND_FROM_EMAIL="BabaStore <noreply@your-domain.com>"
 ```
 
 ## Supabase

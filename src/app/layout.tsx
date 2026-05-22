@@ -6,7 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({
   subsets: ["latin"],
-  display: "swap"
+  display: "swap",
+  variable: "--font-sans"
 });
 
 export const metadata: Metadata = {
@@ -26,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={inter.variable}>
         {children}
         <Toaster />
       </body>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Eye, Loader2, PackagePlus, UploadCloud } from "lucide-react";
+import { CheckCircle2, Eye, Loader2, PackagePlus, ShieldCheck, UploadCloud } from "lucide-react";
 import type { Database } from "@/lib/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,59 +30,75 @@ type UploadedFile = {
   name: string;
 };
 
-function defaultApkContentType(file: File) {
-  return file.type || "application/vnd.android.package-archive";
+type ScanUploadPayload = {
+  publicUrl?: string;
+  retryAfterSeconds?: number;
+  scan?: {
+    status?: string;
+    message?: string;
+    retryAfterSeconds?: number;
+  };
+  error?: string;
+};
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function uploadWithPresign({
+function contentTypeFor(file: File, folder: "apks" | "icons" | "screenshots") {
+  return file.type || (folder === "apks"
+    ? "application/vnd.android.package-archive"
+    : "application/octet-stream");
+}
+
+async function uploadScannedFile({
   file,
   folder,
-  packageName
+  packageName,
+  onPending
 }: {
   file: File;
   folder: "apks" | "icons" | "screenshots";
   packageName: string;
+  onPending?: (message: string, attempt: number) => void;
 }) {
-  const response = await fetch("/api/developer/uploads/presign", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      fileName: file.name,
-      contentType: folder === "apks" ? defaultApkContentType(file) : file.type,
-      folder,
-      packageName
-    })
-  });
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
+    const response = await fetch("/api/developer/uploads/scan-and-upload", {
+      method: "POST",
+      headers: {
+        "Content-Type": contentTypeFor(file, folder),
+        "x-file-name": encodeURIComponent(file.name),
+        "x-package-name": packageName,
+        "x-upload-folder": folder
+      },
+      body: file
+    });
 
-  const payload = (await response.json()) as {
-    uploadUrl?: string;
-    publicUrl?: string;
-    error?: string;
-  };
+    const payload = (await response.json()) as ScanUploadPayload;
 
-  if (!response.ok || !payload.uploadUrl || !payload.publicUrl) {
-    throw new Error(payload.error ?? "Unable to prepare file upload.");
+    if (response.status === 202 || payload.scan?.status === "processing") {
+      const retryAfterSeconds =
+        payload.retryAfterSeconds ?? payload.scan?.retryAfterSeconds ?? 12;
+      onPending?.(
+        payload.scan?.message ?? payload.error ?? "VirusTotal is still processing this file.",
+        attempt
+      );
+      await wait(retryAfterSeconds * 1000);
+      continue;
+    }
+
+    if (!response.ok || !payload.publicUrl) {
+      throw new Error(payload.error ?? "Unable to scan and upload file.");
+    }
+
+    return {
+      url: payload.publicUrl,
+      size: file.size,
+      name: file.name
+    };
   }
 
-  const uploadResponse = await fetch(payload.uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": folder === "apks" ? defaultApkContentType(file) : file.type
-    },
-    body: file
-  });
-
-  if (!uploadResponse.ok) {
-    throw new Error("Cloudflare R2 rejected the file upload.");
-  }
-
-  return {
-    url: payload.publicUrl,
-    size: file.size,
-    name: file.name
-  };
+  throw new Error("VirusTotal is taking longer than expected. Please try this upload again in a minute.");
 }
 
 export function UploadForm({ categories }: { categories: Category[] }) {
@@ -101,7 +117,6 @@ export function UploadForm({ categories }: { categories: Category[] }) {
   const [changelog, setChangelog] = useState("");
   const [uploading, setUploading] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [publishNow, setPublishNow] = useState(false);
 
   const category = categories.find((item) => item.id === selectedCategory);
   const tagList = useMemo(
@@ -135,8 +150,24 @@ export function UploadForm({ categories }: { categories: Category[] }) {
 
     try {
       setUploading(folder);
+      toast({
+        title: folder === "apks" ? "Scanning APK" : "Scanning file",
+        description: "VirusTotal is checking this file before it is uploaded to R2."
+      });
       const uploads = await Promise.all(
-        files.map((file) => uploadWithPresign({ file, folder, packageName }))
+        files.map((file) =>
+          uploadScannedFile({
+            file,
+            folder,
+            packageName,
+            onPending: (message, attempt) => {
+              toast({
+                title: `VirusTotal processing (${attempt}/6)`,
+                description: message
+              });
+            }
+          })
+        )
       );
 
       if (folder === "apks") {
@@ -152,8 +183,8 @@ export function UploadForm({ categories }: { categories: Category[] }) {
       }
 
       toast({
-        title: "Upload complete",
-        description: `${uploads.length} file${uploads.length === 1 ? "" : "s"} uploaded.`
+        title: "Scan passed and upload complete",
+        description: `${uploads.length} file${uploads.length === 1 ? "" : "s"} stored in Cloudflare R2.`
       });
     } catch (error) {
       toast({
@@ -169,6 +200,25 @@ export function UploadForm({ categories }: { categories: Category[] }) {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!selectedCategory) {
+      toast({
+        title: "Category required",
+        description: "Choose a category before saving the app.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!apk) {
+      toast({
+        title: "Scanned APK required",
+        description: "Upload an APK and wait for the VirusTotal scan to pass before saving.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
@@ -184,14 +234,8 @@ export function UploadForm({ categories }: { categories: Category[] }) {
     formData.set("versionName", versionName);
     formData.set("changelog", changelog);
 
-    if (apk) {
-      formData.set("apkUrl", apk.url);
-      formData.set("apkSize", String(apk.size));
-    }
-
-    if (publishNow) {
-      formData.set("publishNow", "on");
-    }
+    formData.set("apkUrl", apk.url);
+    formData.set("apkSize", String(apk.size));
 
     try {
       const response = await fetch("/api/developer/apps", {
@@ -205,8 +249,8 @@ export function UploadForm({ categories }: { categories: Category[] }) {
       }
 
       toast({
-        title: "App saved",
-        description: publishNow ? "The app is published." : "The app is saved as a draft."
+        title: "App submitted",
+        description: "The app is now in admin review and will appear in the store after approval."
       });
       router.push(`/developer/apps/${payload.id}`);
       router.refresh();
@@ -339,7 +383,7 @@ export function UploadForm({ categories }: { categories: Category[] }) {
           <CardHeader>
             <CardTitle>Release files</CardTitle>
             <CardDescription>
-              APK files, icons, and screenshots upload directly to Cloudflare R2.
+              Files are scanned with VirusTotal first, then stored in Cloudflare R2.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -470,21 +514,20 @@ export function UploadForm({ categories }: { categories: Category[] }) {
               </div>
             </div>
 
-            <label className="flex items-start gap-3 rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-600">
-              <input
-                type="checkbox"
-                checked={publishNow}
-                onChange={(event) => setPublishNow(event.target.checked)}
-                className="mt-1"
-              />
+            <div className="flex items-start gap-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0" />
               <span>
-                Publish immediately after saving. Leave unchecked to keep this app as a draft.
+                Apps are submitted to admin review first. Approved apps appear in the public store.
               </span>
-            </label>
+            </div>
 
-            <Button type="submit" disabled={submitting || uploading !== null} className="w-full">
+            <Button
+              type="submit"
+              disabled={submitting || uploading !== null || !apk || !selectedCategory}
+              className="w-full"
+            >
               {submitting ? <Loader2 className="animate-spin" /> : <PackagePlus />}
-              Save app
+              Submit for review
             </Button>
           </CardContent>
         </Card>

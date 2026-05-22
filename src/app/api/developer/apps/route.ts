@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { appMetadataSchema } from "@/lib/validators/developer";
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       privacy_policy_url: input.privacyPolicyUrl,
       apk_url: input.apkUrl,
       icon_url: input.iconUrl,
-      status: input.publishNow ? "published" : "draft"
+      status: profile.role === "admin" && input.publishNow ? "published" : "draft"
     })
     .select("id")
     .single();
@@ -117,5 +118,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  revalidateTag("catalog");
   return NextResponse.json({ id: app.id });
 }

@@ -14,7 +14,7 @@ export const metadata = {
 
 export default async function DeveloperUploadPage() {
   const { missingEnv, profile } = await requireRole(["developer", "admin"]);
-  const overview = profile ? await getDeveloperOverview(profile.id) : null;
+  const overview = profile ? await getDeveloperOverview(profile.id, profile.role) : null;
   const categories = overview?.categories ?? [];
 
   return (

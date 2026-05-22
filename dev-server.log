@@ -1,0 +1,64 @@
+
+> babastore@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.18
+   - Local:        http://localhost:3000
+   - Network:      http://10.208.132.123:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 1903ms
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 594ms (172 modules)
+ ○ Compiling /api/catalog/suggestions ...
+ ✓ Compiled /api/catalog/suggestions in 1310ms (379 modules)
+ GET /api/catalog/suggestions?q=VIBEX 200 in 2480ms
+ GET /api/catalog/apps?q=VIBEX%20AI&limit=20 200 in 2508ms
+ GET /api/catalog/apps?source=local&limit=50 200 in 3403ms
+ ✓ Compiled in 122ms (184 modules)
+ ✓ Compiled in 31ms
+ ○ Compiling / ...
+ ✓ Compiled / in 11.2s (1009 modules)
+ GET / 200 in 3926ms
+ GET / 200 in 3181ms
+ GET / 200 in 2458ms
+ GET / 200 in 2041ms
+ GET / 200 in 17064ms
+ GET / 200 in 1736ms
+ GET / 200 in 615ms
+ GET / 200 in 2448ms
+ GET /?q=vibex 200 in 3675ms
+ ✓ Compiled in 1214ms (377 modules)
+ ✓ Compiled in 651ms (377 modules)
+ ✓ Compiled in 618ms (377 modules)
+ ✓ Compiled in 454ms (377 modules)
+ ✓ Compiled in 714ms (377 modules)
+ ✓ Compiled in 555ms (377 modules)
+ ✓ Compiled in 529ms (377 modules)
+ ✓ Compiled in 828ms (377 modules)
+ ✓ Compiled in 428ms (377 modules)
+ ✓ Compiled in 507ms (377 modules)
+ ✓ Compiled in 482ms (377 modules)
+ ✓ Compiled in 498ms (377 modules)
+ ✓ Compiled in 415ms (377 modules)
+ ✓ Compiled in 782ms (377 modules)
+ ✓ Compiled in 924ms (377 modules)
+ ✓ Compiled in 926ms (377 modules)
+ ✓ Compiled in 1716ms (377 modules)
+ ✓ Compiled in 401ms (377 modules)
+ ✓ Compiled in 365ms (377 modules)
+ ✓ Compiled in 424ms (377 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 1197ms (623 modules)
+ GET /?q=vibex 500 in 12165ms
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 18.5s (1333 modules)
+ GET / 500 in 18685ms
+ GET / 200 in 3854ms
+ ○ Compiling /api/catalog/assets/[asset]/[slug] ...
+ ✓ Compiled /api/catalog/assets/[asset]/[slug] in 1462ms (1350 modules)
+ GET /api/catalog/assets/icon/app-74771724-threads 200 in 3597ms
+ GET /api/catalog/assets/icon/app-36700539-duolingo-learn-languages-free 200 in 3659ms
+ GET /api/catalog/assets/icon/app-74647952-opera-private-web-browser 200 in 3852ms
+ GET /api/catalog/assets/icon/app-43057019-transparent-clock-and-weather 200 in 4274ms

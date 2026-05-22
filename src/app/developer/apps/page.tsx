@@ -23,7 +23,7 @@ export default async function DeveloperAppsPage({
   const { missingEnv, profile } = await requireRole(["developer", "admin"]);
   const params = await searchParams;
   const query = Array.isArray(params.q) ? params.q[0] : params.q;
-  const overview = profile ? await getDeveloperOverview(profile.id) : null;
+  const overview = profile ? await getDeveloperOverview(profile.id, profile.role) : null;
   const apps = overview?.apps ?? [];
   const filteredApps = query
     ? apps.filter((app) =>
@@ -37,7 +37,7 @@ export default async function DeveloperAppsPage({
   return (
     <DashboardShell
       section="developer"
-      title="My Apps"
+      title={profile?.role === "admin" ? "All Apps" : "My Apps"}
       description="Review listings, APK readiness, publishing state, and release metadata."
     >
       <div className="grid gap-4">

@@ -1,46 +1,7 @@
-import Link from "next/link";
-import {
-  BarChart3,
-  Boxes,
-  CircleUser,
-  Download,
-  Flag,
-  Heart,
-  LayoutDashboard,
-  Megaphone,
-  PackagePlus,
-  Settings,
-  ShieldCheck,
-  Tags,
-  Users
-} from "lucide-react";
-import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
+import { CircleUser } from "lucide-react";
+import { signOutAction } from "@/app/actions/auth";
+import { DashboardNav, type ShellSection } from "@/components/layout/dashboard-nav";
 import { cn } from "@/lib/utils";
-
-const navBySection = {
-  user: [
-    { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-    { href: "/dashboard/apps", label: "My Apps", icon: Download },
-    { href: "/dashboard/wishlist", label: "Wishlist", icon: Heart },
-    { href: "/settings", label: "Settings", icon: Settings }
-  ],
-  developer: [
-    { href: "/developer", label: "Overview", icon: BarChart3 },
-    { href: "/developer/apps", label: "My Apps", icon: Boxes },
-    { href: "/developer/upload", label: "Upload APK", icon: PackagePlus },
-    { href: "/developer/settings", label: "Settings", icon: Settings }
-  ],
-  admin: [
-    { href: "/admin", label: "Moderation", icon: ShieldCheck },
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/categories", label: "Categories", icon: Tags },
-    { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
-    { href: "/admin/reports", label: "Reports", icon: Flag }
-  ]
-} as const;
-
-type ShellSection = keyof typeof navBySection;
 
 export function DashboardShell({
   section,
@@ -55,58 +16,36 @@ export function DashboardShell({
   children: React.ReactNode;
   className?: string;
 }) {
-  const nav = navBySection[section];
-
   return (
-    <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-neutral-200 bg-white p-5 shadow-glass lg:block">
-        <Logo />
-        <nav className="mt-8 grid gap-1">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
-            >
-              <item.icon className="size-4" />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-      <main className="lg:pl-72">
-        <header className="border-b border-neutral-200 bg-white/85 backdrop-blur-xl">
-          <div className="flex min-h-20 items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-            <div>
-              <p className="mono-label">BabaSwift AppStore</p>
-              <h1 className="text-2xl font-semibold tracking-normal text-neutral-950">
+    <div className="min-h-screen bg-neutral-50">
+      <DashboardNav section={section} signOutAction={signOutAction} />
+      <main className="min-w-0 lg:pl-72">
+        <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/90 backdrop-blur-xl lg:static">
+          <div className="flex min-h-16 items-center justify-between gap-3 px-4 py-3 sm:min-h-20 sm:px-6 sm:py-4 lg:px-8">
+            <div className="min-w-0 pl-12 lg:pl-0">
+              <p className="mono-label">BabaStore</p>
+              <h1 className="mt-0.5 truncate text-xl font-semibold tracking-normal text-neutral-950 sm:mt-1 sm:text-3xl">
                 {title}
               </h1>
-              <p className="mt-1 max-w-2xl text-sm text-neutral-600">
+              <p className="mt-1 hidden max-w-2xl text-sm leading-6 text-neutral-600 sm:block">
                 {description}
               </p>
             </div>
-            <Button variant="secondary" size="icon" aria-label="Profile">
-              <CircleUser />
-            </Button>
+            <form action={signOutAction} className="hidden sm:block">
+              <button
+                type="submit"
+                className="inline-flex size-10 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 shadow-glass transition hover:bg-neutral-50 hover:text-neutral-950"
+                aria-label="Sign out"
+              >
+                <CircleUser className="size-5" />
+              </button>
+            </form>
           </div>
         </header>
-        <div className={cn("px-4 py-6 sm:px-6 lg:px-8", className)}>
+        <div className={cn("px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-8", className)}>
           {children}
         </div>
       </main>
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-neutral-200 bg-white/90 p-2 shadow-float backdrop-blur-xl lg:hidden">
-        {nav.slice(0, 4).map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex flex-col items-center gap-1 rounded-md px-2 py-1.5 text-[11px] text-neutral-600"
-          >
-            <item.icon className="size-4" />
-            {item.label}
-          </Link>
-        ))}
-      </nav>
     </div>
   );
 }

@@ -17,7 +17,8 @@ export function StoreFilters({
   minRating,
   size,
   updated,
-  sort
+  sort,
+  source
 }: {
   categories: CategorySummary[];
   query?: string;
@@ -26,16 +27,22 @@ export function StoreFilters({
   size?: string;
   updated?: string;
   sort?: string;
+  source?: string;
 }) {
   return (
-    <form className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-3 shadow-glass lg:grid-cols-[1fr_180px_150px_150px_150px_150px_auto]">
-      <div className="relative">
+    <form
+      action="/"
+      method="get"
+      className="grid min-w-0 grid-cols-2 gap-2 rounded-lg border border-neutral-200 bg-white p-3 shadow-glass sm:grid-cols-3 lg:grid-cols-[minmax(220px,1fr)_180px_150px_150px_150px_150px_auto] lg:gap-3"
+    >
+      <div className="relative col-span-full">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
         <Input
           name="q"
           defaultValue={query}
           className="h-10 pl-9"
           placeholder="Search by name, developer, package..."
+          enterKeyHint="search"
         />
       </div>
       <Select name="category" defaultValue={category ?? "all"}>
@@ -51,6 +58,7 @@ export function StoreFilters({
           ))}
         </SelectContent>
       </Select>
+      <input type="hidden" name="source" value={source ?? "all"} />
       <Select name="rating" defaultValue={minRating ?? "0"}>
         <SelectTrigger aria-label="Rating">
           <SelectValue placeholder="Rating" />
@@ -90,16 +98,17 @@ export function StoreFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="featured">Featured</SelectItem>
+          <SelectItem value="popularity">Popularity</SelectItem>
           <SelectItem value="rating">Rating</SelectItem>
           <SelectItem value="downloads">Downloads</SelectItem>
           <SelectItem value="newest">Newest</SelectItem>
           <SelectItem value="size">Smallest</SelectItem>
         </SelectContent>
       </Select>
-      <Button type="submit" className="h-10">
-        Apply
+      <Button type="submit" className="col-span-full h-10 lg:col-span-1">
+        <Search />
+        Apply filters
       </Button>
     </form>
   );
 }
-

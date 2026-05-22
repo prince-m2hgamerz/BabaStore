@@ -14,6 +14,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { EnvWarning } from "@/components/dashboard/env-warning";
 import { StatusBadge } from "@/components/developer/status-badge";
 import { AppEditor } from "@/components/developer/app-editor";
+import { DeleteAppCard } from "@/components/developer/delete-app-card";
 import { VersionForm } from "@/components/developer/version-form";
 import { AppIcon } from "@/components/catalog/app-icon";
 import { Button } from "@/components/ui/button";
@@ -35,8 +36,8 @@ export default async function DeveloperAppPage({
 }) {
   const { id } = await params;
   const { missingEnv, profile } = await requireRole(["developer", "admin"]);
-  const app = profile ? await getDeveloperApp(profile.id, id) : null;
-  const overview = profile ? await getDeveloperOverview(profile.id) : null;
+  const app = profile ? await getDeveloperApp(profile.id, id, profile.role) : null;
+  const overview = profile ? await getDeveloperOverview(profile.id, profile.role) : null;
 
   if (!app) {
     notFound();
@@ -221,6 +222,8 @@ export default async function DeveloperAppPage({
                 ))}
               </CardContent>
             </Card>
+
+            <DeleteAppCard appId={app.id} appName={app.name} />
           </aside>
         </div>
       </div>

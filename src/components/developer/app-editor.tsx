@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, ShieldCheck } from "lucide-react";
 import type { Database } from "@/lib/supabase/types";
 import type { DeveloperAppDetail } from "@/lib/developer/developer";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ export function AppEditor({
   categories: Category[];
 }) {
   const router = useRouter();
+  const isAdmin = app.viewerRole === "admin";
   const initialDescription = useMemo(() => splitDescription(app.description), [app.description]);
   const [submitting, setSubmitting] = useState(false);
   const [categoryId, setCategoryId] = useState(app.categoryId ?? categories[0]?.id ?? "");
@@ -114,20 +115,27 @@ export function AppEditor({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
-              <Label>Status</Label>
-              <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                  <SelectItem value="flagged">Flagged</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {isAdmin ? (
+              <div className="grid gap-2">
+                <Label>Status</Label>
+                <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">In review</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="flagged">Flagged</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+                <span>Saving metadata sends this listing to admin review.</span>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-2">

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/constants";
+import { getRoleHome, isUserRole } from "@/lib/auth/routes";
 import type { User } from "@supabase/supabase-js";
 
 type ProfileGuardResult = {
@@ -44,7 +45,27 @@ export async function getCurrentProfile(): Promise<ProfileGuardResult> {
     .from("profiles")
     .select("id, role, email, username, avatar_url")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
+
+  if (!profile && isUserRole(user.user_metadata?.role)) {
+    return {
+      user,
+      profile: {
+        id: user.id,
+        role: user.user_metadata.role,
+        email: user.email ?? "",
+        username:
+          typeof user.user_metadata?.username === "string"
+            ? user.user_metadata.username
+            : null,
+        avatar_url:
+          typeof user.user_metadata?.avatar_url === "string"
+            ? user.user_metadata.avatar_url
+            : null
+      },
+      missingEnv: false
+    };
+  }
 
   return {
     user,
@@ -65,7 +86,7 @@ export async function requireRole(allowedRoles: UserRole[]) {
   }
 
   if (!result.profile || !allowedRoles.includes(result.profile.role)) {
-    redirect("/dashboard");
+    redirect(getRoleHome(result.profile?.role));
   }
 
   return result;

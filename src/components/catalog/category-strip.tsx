@@ -5,7 +5,7 @@ import type { CategorySummary } from "@/lib/catalog/types";
 
 export function CategoryStrip({ categories }: { categories: CategorySummary[] }) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2">
+    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
       {categories.map((category) => (
         <Link
           key={category.slug}

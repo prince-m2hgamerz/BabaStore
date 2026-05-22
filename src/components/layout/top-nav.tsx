@@ -1,58 +1,76 @@
 import Link from "next/link";
-import { Grid2X2, Search, UploadCloud } from "lucide-react";
+import { Search, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/brand/logo";
 
-export function TopNav() {
+export function TopNav({ searchQuery = "" }: { searchQuery?: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/85 backdrop-blur-xl">
-      <div className="page-shell flex h-16 items-center gap-4">
-        <Logo />
-        <nav className="hidden items-center gap-1 lg:flex">
-          <Link
-            href="/"
-            className="rounded-full px-3 py-2 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
-          >
-            Store
-          </Link>
-          <Link
-            href="/?tab=categories"
-            className="rounded-full px-3 py-2 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
-          >
-            Categories
-          </Link>
-          <Link
-            href="/developer"
-            className="rounded-full px-3 py-2 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
-          >
-            Developers
-          </Link>
-        </nav>
-        <div className="relative hidden flex-1 md:block">
+      <div className="page-shell grid gap-2 py-2 sm:gap-3 sm:py-3">
+        <div className="flex min-h-11 min-w-0 items-center gap-2 sm:gap-3">
+          <Logo />
+          <nav className="hidden items-center gap-1 lg:flex">
+            <Link
+              href="/"
+              className="rounded-full px-3 py-2 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
+            >
+              Store
+            </Link>
+            <Link
+              href="/?tab=categories"
+              className="rounded-full px-3 py-2 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
+            >
+              Categories
+            </Link>
+            <Link
+              href="/developer"
+              className="rounded-full px-3 py-2 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
+            >
+              Developers
+            </Link>
+          </nav>
+          <form action="/" method="get" className="relative hidden flex-1 md:block">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+            <Input
+              name="q"
+              defaultValue={searchQuery}
+              className="h-10 pl-9 pr-24"
+              placeholder="Search Android apps, games, tools..."
+              aria-label="Search apps"
+              enterKeyHint="search"
+            />
+            <Button type="submit" size="sm" className="absolute right-1 top-1 h-8">
+              Search
+            </Button>
+          </form>
+          <nav className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+              <Link href="/login">Sign in</Link>
+            </Button>
+            <Button size="sm" asChild className="shrink-0 sm:h-10 sm:px-4 sm:text-sm">
+              <Link href="/register">
+                <UploadCloud />
+                <span className="hidden xs:inline">Developer</span>
+              </Link>
+            </Button>
+          </nav>
+        </div>
+
+        <form action="/" method="get" className="relative mx-auto w-full max-w-xl md:hidden">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
           <Input
-            className="h-10 pl-9"
-            placeholder="Search Android apps, games, tools..."
+            name="q"
+            defaultValue={searchQuery}
+            className="h-10 rounded-full pl-9 pr-20 text-sm"
+            placeholder="Search apps..."
             aria-label="Search apps"
+            enterKeyHint="search"
           />
-        </div>
-        <nav className="ml-auto flex items-center gap-2">
-          <Button variant="secondary" size="icon" asChild className="md:hidden">
-            <Link href="/?focus=search" aria-label="Browse apps">
-              <Grid2X2 />
-            </Link>
+          <Button type="submit" size="sm" className="absolute right-1 top-1/2 h-8 -translate-y-1/2 px-3 text-xs">
+            Search
           </Button>
-          <Button variant="ghost" asChild className="hidden sm:inline-flex">
-            <Link href="/login">Sign in</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/register">
-              <UploadCloud />
-              Developer
-            </Link>
-          </Button>
-        </nav>
+        </form>
       </div>
     </header>
   );

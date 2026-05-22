@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { versionCreateSchema } from "@/lib/validators/developer";
@@ -71,7 +72,7 @@ export async function POST(
     .update({
       version: parsed.data.versionName,
       apk_url: parsed.data.apkUrl,
-      status: parsed.data.publishNow ? "published" : "draft",
+      status: profile.role === "admin" && parsed.data.publishNow ? "published" : "draft",
       updated_at: new Date().toISOString()
     })
     .eq("id", id);
@@ -80,5 +81,6 @@ export async function POST(
     return NextResponse.json({ error: appUpdateError.message }, { status: 500 });
   }
 
+  revalidateTag("catalog");
   return NextResponse.json({ ok: true });
 }

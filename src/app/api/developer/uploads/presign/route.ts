@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/guards";
-import { createR2PresignedPutUrl, isR2Ready } from "@/lib/storage/r2";
+import { createR2PresignedPutUrl, isR2PresignReady } from "@/lib/storage/r2";
 import { androidPackageSchema } from "@/lib/validators/developer";
 
 const allowedFolders = new Set(["apks", "icons", "screenshots"] as const);
@@ -19,9 +19,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (!isR2Ready()) {
+  if (!isR2PresignReady()) {
     return NextResponse.json(
-      { error: "Cloudflare R2 environment variables are missing." },
+      { error: "Cloudflare R2 presigned upload environment variables are missing." },
       { status: 503 }
     );
   }

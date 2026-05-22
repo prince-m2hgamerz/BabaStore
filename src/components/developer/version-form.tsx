@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, PackagePlus, UploadCloud } from "lucide-react";
+import { CheckCircle2, Loader2, PackagePlus, ShieldCheck, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,47 +16,66 @@ type UploadedApk = {
   name: string;
 };
 
-async function uploadApk(file: File, packageName: string) {
-  const contentType = file.type || "application/vnd.android.package-archive";
-  const response = await fetch("/api/developer/uploads/presign", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      fileName: file.name,
-      contentType,
-      folder: "apks",
-      packageName
-    })
-  });
-  const payload = (await response.json()) as {
-    uploadUrl?: string;
-    publicUrl?: string;
-    error?: string;
+type ScanUploadPayload = {
+  publicUrl?: string;
+  retryAfterSeconds?: number;
+  scan?: {
+    status?: string;
+    message?: string;
+    retryAfterSeconds?: number;
   };
+  error?: string;
+};
 
-  if (!response.ok || !payload.uploadUrl || !payload.publicUrl) {
-    throw new Error(payload.error ?? "Unable to prepare APK upload.");
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function apkContentType(file: File) {
+  return file.type || "application/vnd.android.package-archive";
+}
+
+async function uploadApk(
+  file: File,
+  packageName: string,
+  onPending?: (message: string, attempt: number) => void
+) {
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
+    const response = await fetch("/api/developer/uploads/scan-and-upload", {
+      method: "POST",
+      headers: {
+        "Content-Type": apkContentType(file),
+        "x-file-name": encodeURIComponent(file.name),
+        "x-package-name": packageName,
+        "x-upload-folder": "apks"
+      },
+      body: file
+    });
+    const payload = (await response.json()) as ScanUploadPayload;
+
+    if (response.status === 202 || payload.scan?.status === "processing") {
+      const retryAfterSeconds =
+        payload.retryAfterSeconds ?? payload.scan?.retryAfterSeconds ?? 12;
+      onPending?.(
+        payload.scan?.message ?? payload.error ?? "VirusTotal is still processing this APK.",
+        attempt
+      );
+      await wait(retryAfterSeconds * 1000);
+      continue;
+    }
+
+    if (!response.ok || !payload.publicUrl) {
+      throw new Error(payload.error ?? "Unable to scan and upload APK.");
+    }
+
+    return {
+      url: payload.publicUrl,
+      size: file.size,
+      name: file.name
+    };
   }
 
-  const uploadResponse = await fetch(payload.uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": contentType
-    },
-    body: file
-  });
-
-  if (!uploadResponse.ok) {
-    throw new Error("Cloudflare R2 rejected the APK upload.");
-  }
-
-  return {
-    url: payload.publicUrl,
-    size: file.size,
-    name: file.name
-  };
+  throw new Error("VirusTotal is taking longer than expected. Please try this upload again in a minute.");
 }
 
 export function VersionForm({
@@ -80,10 +99,19 @@ export function VersionForm({
 
     try {
       setUploading(true);
-      const uploaded = await uploadApk(file, packageName);
+      toast({
+        title: "Scanning APK",
+        description: "VirusTotal is checking this release before it is uploaded to R2."
+      });
+      const uploaded = await uploadApk(file, packageName, (message, attempt) => {
+        toast({
+          title: `VirusTotal processing (${attempt}/6)`,
+          description: message
+        });
+      });
       setApk(uploaded);
       toast({
-        title: "APK uploaded",
+        title: "Scan passed and APK uploaded",
         description: uploaded.name
       });
     } catch (error) {
@@ -100,14 +128,22 @@ export function VersionForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!apk) {
+      toast({
+        title: "APK required",
+        description: "Upload and scan an APK before saving this version.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
 
-    if (apk) {
-      formData.set("apkUrl", apk.url);
-      formData.set("apkSize", String(apk.size));
-    }
+    formData.set("apkUrl", apk.url);
+    formData.set("apkSize", String(apk.size));
 
     try {
       const response = await fetch(`/api/developer/apps/${appId}/versions`, {
@@ -183,14 +219,14 @@ export function VersionForm({
             <Textarea id="changelog" name="changelog" required />
           </div>
 
-          <label className="flex items-start gap-3 rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-600">
-            <input type="checkbox" name="publishNow" className="mt-1" />
-            <span>Publish this version immediately.</span>
-          </label>
+          <div className="flex items-start gap-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+            <span>This release is sent back to admin review before it becomes public.</span>
+          </div>
 
-          <Button type="submit" disabled={submitting || uploading} className="w-full sm:w-fit">
+          <Button type="submit" disabled={submitting || uploading || !apk} className="w-full sm:w-fit">
             {submitting ? <Loader2 className="animate-spin" /> : <PackagePlus />}
-            Add version
+            Submit version
           </Button>
         </form>
       </CardContent>

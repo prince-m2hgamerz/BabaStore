@@ -11,23 +11,36 @@ const uploadableTypes = new Set([
 
 function r2Env() {
   return {
-    accountId: process.env.CLOUDFLARE_R2_ACCOUNT_ID,
+    accountId: process.env.CLOUDFLARE_R2_ACCOUNT_ID ?? process.env.CLOUDFLARE_ACCOUNT_ID,
     accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
     secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
-    bucket: process.env.CLOUDFLARE_R2_BUCKET,
-    publicBaseUrl: process.env.CLOUDFLARE_R2_PUBLIC_URL
+    bucket: process.env.CLOUDFLARE_R2_BUCKET ?? "babastore-apps",
+    publicBaseUrl: process.env.CLOUDFLARE_R2_PUBLIC_URL,
+    apiToken: process.env.CLOUDFLARE_API_TOKEN,
+    storageClass: process.env.CLOUDFLARE_R2_STORAGE_CLASS ?? "Standard"
   };
 }
 
 export function isR2Ready() {
   const env = r2Env();
 
+  const canUseCloudflareApi = Boolean(env.accountId && env.apiToken && env.bucket);
+  const canUseS3Presign = Boolean(
+    env.accountId && env.accessKeyId && env.secretAccessKey && env.bucket && env.publicBaseUrl
+  );
+
+  return canUseCloudflareApi || canUseS3Presign;
+}
+
+export function isR2ApiReady() {
+  const env = r2Env();
+  return Boolean(env.accountId && env.apiToken && env.bucket);
+}
+
+export function isR2PresignReady() {
+  const env = r2Env();
   return Boolean(
-    env.accountId &&
-      env.accessKeyId &&
-      env.secretAccessKey &&
-      env.bucket &&
-      env.publicBaseUrl
+    env.accountId && env.accessKeyId && env.secretAccessKey && env.bucket && env.publicBaseUrl
   );
 }
 
@@ -86,12 +99,218 @@ function publicUrlForKey(key: string, publicBaseUrl: string) {
     .join("/")}`;
 }
 
+function objectKeyForCloudflareApi(key: string) {
+  return key.split("/").map(awsEncode).join("/");
+}
+
+function bodyInitFromBuffer(buffer: Buffer) {
+  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
+}
+
+function assertUploadableType(contentType: string) {
+  if (!uploadableTypes.has(contentType)) {
+    throw new Error("This file type is not allowed for app uploads.");
+  }
+}
+
+function cloudflareApiUrl(accountId: string, path: string) {
+  return `https://api.cloudflare.com/client/v4/accounts/${accountId}${path}`;
+}
+
+type CloudflareResponse<T> = {
+  success: boolean;
+  result?: T;
+  errors?: Array<{ code?: number; message?: string }>;
+  messages?: unknown[];
+};
+
+async function cloudflareFetch<T>(
+  path: string,
+  init: RequestInit = {}
+): Promise<CloudflareResponse<T> & { status: number }> {
+  const env = r2Env();
+
+  if (!env.accountId || !env.apiToken) {
+    throw new Error("Cloudflare account ID or API token is missing.");
+  }
+
+  const response = await fetch(cloudflareApiUrl(env.accountId, path), {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${env.apiToken}`,
+      ...(init.headers ?? {})
+    }
+  });
+  const text = await response.text();
+  const payload = text
+    ? (JSON.parse(text) as CloudflareResponse<T>)
+    : ({ success: response.ok } as CloudflareResponse<T>);
+
+  return { ...payload, status: response.status };
+}
+
+function cloudflareErrorMessage(payload: CloudflareResponse<unknown>) {
+  return payload.errors?.map((error) => error.message).filter(Boolean).join("; ") || "Cloudflare R2 request failed.";
+}
+
+export function r2BucketName() {
+  return r2Env().bucket;
+}
+
+export async function ensureR2Bucket() {
+  const env = r2Env();
+
+  if (!env.bucket) {
+    throw new Error("Cloudflare R2 bucket name is missing.");
+  }
+
+  const existing = await cloudflareFetch(`/r2/buckets/${awsEncode(env.bucket)}`);
+  if (existing.success || existing.status === 200) {
+    return { bucket: env.bucket, created: false };
+  }
+
+  const created = await cloudflareFetch(`/r2/buckets`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: env.bucket,
+      storageClass: env.storageClass
+    })
+  });
+
+  if (!created.success && created.status !== 409) {
+    throw new Error(cloudflareErrorMessage(created));
+  }
+
+  return { bucket: env.bucket, created: created.status !== 409 };
+}
+
+async function getManagedPublicBaseUrl() {
+  const env = r2Env();
+
+  if (!env.bucket) {
+    throw new Error("Cloudflare R2 bucket name is missing.");
+  }
+
+  if (env.publicBaseUrl) {
+    return env.publicBaseUrl;
+  }
+
+  const managed = await cloudflareFetch<{ domain?: string; enabled?: boolean }>(
+    `/r2/buckets/${awsEncode(env.bucket)}/domains/managed`
+  );
+
+  if (managed.success && managed.result?.domain && managed.result.enabled) {
+    return `https://${managed.result.domain}`;
+  }
+
+  if (process.env.CLOUDFLARE_R2_ENABLE_PUBLIC_ACCESS === "false") {
+    throw new Error("Cloudflare R2 public URL is missing and managed r2.dev access is disabled.");
+  }
+
+  const enabled = await cloudflareFetch<{ domain?: string; enabled?: boolean }>(
+    `/r2/buckets/${awsEncode(env.bucket)}/domains/managed`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ enabled: true })
+    }
+  );
+
+  if (!enabled.success || !enabled.result?.domain) {
+    throw new Error(cloudflareErrorMessage(enabled));
+  }
+
+  return `https://${enabled.result.domain}`;
+}
+
 export type PresignedUpload = {
   uploadUrl: string;
   publicUrl: string;
   key: string;
   expiresIn: number;
 };
+
+export type R2UploadedObject = {
+  publicUrl: string;
+  key: string;
+  bucket: string;
+  size: number;
+};
+
+function createUploadKey({
+  developerId,
+  fileName,
+  contentType,
+  folder
+}: {
+  developerId: string;
+  fileName: string;
+  contentType: string;
+  folder: "apks" | "icons" | "screenshots";
+}) {
+  const normalizedFileName = normalizeFileName(fileName);
+
+  return [
+    "developers",
+    developerId,
+    folder,
+    `${randomUUID()}${extensionFor(contentType, normalizedFileName)}`
+  ].join("/");
+}
+
+export async function uploadR2ObjectViaCloudflareApi({
+  developerId,
+  fileName,
+  contentType,
+  folder,
+  body
+}: {
+  developerId: string;
+  fileName: string;
+  contentType: string;
+  folder: "apks" | "icons" | "screenshots";
+  body: Buffer;
+}): Promise<R2UploadedObject> {
+  const env = r2Env();
+
+  if (!env.accountId || !env.apiToken || !env.bucket) {
+    throw new Error("Cloudflare R2 API environment variables are missing.");
+  }
+
+  assertUploadableType(contentType);
+  await ensureR2Bucket();
+
+  const key = createUploadKey({ developerId, fileName, contentType, folder });
+  const publicBaseUrl = await getManagedPublicBaseUrl();
+
+  const upload = await cloudflareFetch<{ key?: string; size?: string }>(
+    `/r2/buckets/${awsEncode(env.bucket)}/objects/${objectKeyForCloudflareApi(key)}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": contentType,
+        "cf-r2-storage-class": env.storageClass
+      },
+      body: bodyInitFromBuffer(body)
+    }
+  );
+
+  if (!upload.success) {
+    throw new Error(cloudflareErrorMessage(upload));
+  }
+
+  return {
+    publicUrl: publicUrlForKey(key, publicBaseUrl),
+    key,
+    bucket: env.bucket,
+    size: body.byteLength
+  };
+}
 
 export async function createR2PresignedPutUrl({
   developerId,
@@ -116,9 +335,7 @@ export async function createR2PresignedPutUrl({
     throw new Error("Cloudflare R2 upload environment variables are missing.");
   }
 
-  if (!uploadableTypes.has(contentType)) {
-    throw new Error("This file type is not allowed for app uploads.");
-  }
+  assertUploadableType(contentType);
 
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
@@ -128,13 +345,7 @@ export async function createR2PresignedPutUrl({
   const host = `${env.accountId}.r2.cloudflarestorage.com`;
   const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
   const expiresIn = 900;
-  const normalizedFileName = normalizeFileName(fileName);
-  const key = [
-    "developers",
-    developerId,
-    folder,
-    `${randomUUID()}${extensionFor(contentType, normalizedFileName)}`
-  ].join("/");
+  const key = createUploadKey({ developerId, fileName, contentType, folder });
   const canonicalUri = `/${env.bucket}/${key.split("/").map(awsEncode).join("/")}`;
   const params = new URLSearchParams({
     "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
