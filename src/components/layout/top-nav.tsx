@@ -1,10 +1,30 @@
 import Link from "next/link";
-import { Search, UploadCloud } from "lucide-react";
+import { LayoutDashboard, Search, UploadCloud, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/brand/logo";
+import { getCurrentProfile } from "@/lib/auth/guards";
 
-export function TopNav({ searchQuery = "" }: { searchQuery?: string }) {
+export async function TopNav({ searchQuery = "" }: { searchQuery?: string }) {
+  const { profile } = await getCurrentProfile();
+  const signedIn = Boolean(profile);
+
+  const dashLink = profile
+    ? profile.role === "admin"
+      ? "/admin"
+      : profile.role === "developer"
+        ? "/developer"
+        : "/dashboard"
+    : null;
+
+  const dashLabel = profile
+    ? profile.role === "admin"
+      ? "Admin"
+      : profile.role === "developer"
+        ? "Developer"
+        : "Dashboard"
+    : null;
+
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/85 backdrop-blur-xl">
       <div className="page-shell grid gap-2 py-2 sm:gap-3 sm:py-3">
@@ -45,15 +65,34 @@ export function TopNav({ searchQuery = "" }: { searchQuery?: string }) {
             </Button>
           </form>
           <nav className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
-            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-              <Link href="/login">Sign in</Link>
-            </Button>
-            <Button size="sm" asChild className="shrink-0 sm:h-10 sm:px-4 sm:text-sm">
-              <Link href="/register">
-                <UploadCloud />
-                <span className="hidden xs:inline">Developer</span>
-              </Link>
-            </Button>
+            {signedIn && dashLink ? (
+              <>
+                <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+                  <Link href={dashLink}>
+                    <LayoutDashboard className="size-4" />
+                    {dashLabel}
+                  </Link>
+                </Button>
+                <Button size="sm" asChild className="shrink-0 sm:h-10 sm:px-4 sm:text-sm">
+                  <Link href="/settings">
+                    <UserCircle className="size-4 sm:mr-1.5" />
+                    <span className="hidden xs:inline">Account</span>
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+                <Button size="sm" asChild className="shrink-0 sm:h-10 sm:px-4 sm:text-sm">
+                  <Link href="/register">
+                    <UploadCloud />
+                    <span className="hidden xs:inline">Developer</span>
+                  </Link>
+                </Button>
+              </>
+            )}
           </nav>
         </div>
 

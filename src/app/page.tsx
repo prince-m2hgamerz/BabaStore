@@ -93,6 +93,8 @@ export default async function HomePage({
       <main>
         {/* Hero */}
         <section className="relative overflow-hidden bg-gradient-to-b from-[#f0f7ff] via-white to-white">
+          <div className="absolute -right-32 -top-32 size-96 rounded-full bg-gradient-to-br from-[#f0f7ff] to-transparent blur-3xl" />
+          <div className="absolute -bottom-32 -left-32 size-96 rounded-full bg-gradient-to-tr from-[#faf0ff] to-transparent blur-3xl" />
           <div className="page-shell relative pb-4 pt-3 sm:pb-8 sm:pt-6">
             {featuredApp && featuredMetrics ? (
               <Link
@@ -101,31 +103,31 @@ export default async function HomePage({
               >
                 <div className="flex flex-col sm:flex-row">
                   <div
-                    className="relative flex min-h-[180px] w-full items-end p-5 sm:min-h-[220px] sm:w-72 sm:p-6"
+                    className="relative flex min-h-[180px] w-full items-end p-5 sm:min-h-[260px] sm:w-80 sm:p-8"
                     style={{ background: featuredApp.accent }}
                   >
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.35),transparent_50%)]" />
-                    <div className="relative flex items-end gap-3 sm:gap-4">
+                    <div className="relative flex items-end gap-4 sm:gap-5">
                       <AppIcon
                         name={featuredApp.name}
                         accent={featuredApp.accent}
                         src={featuredApp.iconUrl}
-                        className="size-14 border-2 border-white/30 shadow-lg sm:size-20"
+                        className="size-16 border-2 border-white/30 shadow-lg sm:size-24"
                       />
                       <div className="text-white">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70 sm:text-[11px]">
-                          Featured
+                          Featured App
                         </p>
-                        <h2 className="text-lg font-bold leading-tight sm:text-2xl">
+                        <h2 className="text-xl font-bold leading-tight sm:text-3xl">
                           {featuredApp.name}
                         </h2>
-                        <p className="mt-0.5 text-xs text-white/75 sm:text-sm">
+                        <p className="mt-0.5 text-sm text-white/75 sm:text-base">
                           {featuredApp.developer}
                         </p>
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-1 flex-col justify-center gap-2 p-4 sm:gap-3 sm:p-6">
+                  <div className="flex flex-1 flex-col justify-center gap-2 p-5 sm:gap-3 sm:p-8">
                     <p className="line-clamp-2 text-sm leading-relaxed text-neutral-600 sm:text-[15px]">
                       {featuredApp.summary ?? featuredApp.description}
                     </p>
@@ -140,39 +142,40 @@ export default async function HomePage({
                       </span>
                       <span className="hidden text-neutral-300 sm:inline">|</span>
                       <span className="hidden sm:inline">{featuredMetrics.size}</span>
+                      <span className="ml-auto hidden text-xs text-neutral-400 sm:inline">{featuredApp.category}</span>
                     </div>
-                    <div className="mt-1 flex items-center gap-3 sm:mt-2">
-                      <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#01875f] px-4 text-sm font-medium text-white transition group-hover:bg-[#016b4a]">
+                    <div className="mt-1 flex items-center gap-4 sm:mt-2">
+                      <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#01875f] px-5 text-sm font-medium text-white transition group-hover:bg-[#016b4a]">
                         <Download className="size-4" />
                         Install
                       </span>
-                      <span className="text-sm font-medium text-blue-600 group-hover:underline">
-                        More info
+                      <span className="text-sm font-medium text-blue-600 transition group-hover:underline">
+                        More info &rarr;
                       </span>
                     </div>
                   </div>
                 </div>
               </Link>
             ) : (
-              <div className="flex flex-col gap-2 py-6 sm:gap-3 sm:py-10">
-                <Badge variant="secondary" className="w-fit font-mono text-[11px]">
-                  <Sparkles className="mr-1 size-3" />
+              <div className="flex flex-col items-center gap-3 py-8 text-center sm:gap-4 sm:py-16">
+                <Badge variant="secondary" className="w-fit font-mono text-[11px] tracking-wider">
+                  <Sparkles className="mr-1.5 size-3" />
                   ANDROID APP MARKETPLACE
                 </Badge>
-                <h1 className="max-w-2xl text-2xl font-bold leading-tight tracking-tight text-neutral-950 sm:text-5xl">
+                <h1 className="max-w-3xl text-3xl font-bold leading-tight tracking-tight text-neutral-950 sm:text-6xl">
                   Discover Android apps, directly.
                 </h1>
-                <p className="max-w-xl text-sm leading-relaxed text-neutral-500 sm:text-base">
+                <p className="max-w-xl text-sm leading-relaxed text-neutral-500 sm:text-lg">
                   Browse thousands of free APKs. Publish your own. No gatekeepers, just apps.
                 </p>
-                <div className="mt-2 flex gap-2 sm:mt-4">
-                  <Button size="sm" className="rounded-full sm:h-11 sm:px-6" asChild>
+                <div className="mt-2 flex gap-3 sm:mt-6">
+                  <Button size="default" className="rounded-full sm:h-12 sm:px-8 sm:text-base" asChild>
                     <Link href="#catalog">
                       Browse apps
                       <ChevronRight />
                     </Link>
                   </Button>
-                  <Button size="sm" variant="secondary" className="rounded-full sm:h-11 sm:px-6" asChild>
+                  <Button size="default" variant="secondary" className="rounded-full sm:h-12 sm:px-8 sm:text-base" asChild>
                     <Link href="/developer">Developer console</Link>
                   </Button>
                 </div>
@@ -204,7 +207,7 @@ export default async function HomePage({
                 Top Charts
               </h2>
               <Button variant="ghost" size="sm" asChild className="text-xs sm:text-sm">
-                <Link href="/?sort=downloads">
+                <Link href="/?tab=top-charts&sort=downloads#catalog">
                   More <ChevronRight className="size-4" />
                 </Link>
               </Button>
@@ -262,7 +265,7 @@ export default async function HomePage({
                 Editor&apos;s Choice
               </h2>
               <Button variant="ghost" size="sm" asChild className="text-xs sm:text-sm">
-                <Link href="/?sort=rating">
+                <Link href="/?tab=for-you&sort=rating#catalog">
                   More <ChevronRight className="size-4" />
                 </Link>
               </Button>
@@ -285,7 +288,7 @@ export default async function HomePage({
                 New Releases
               </h2>
               <Button variant="ghost" size="sm" asChild className="text-xs sm:text-sm">
-                <Link href="/?sort=newest">
+                <Link href="/?tab=new-releases&sort=newest#catalog">
                   More <ChevronRight className="size-4" />
                 </Link>
               </Button>

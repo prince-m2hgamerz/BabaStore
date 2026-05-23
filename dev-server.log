@@ -3,7 +3,7 @@
 > next dev
 
    ▲ Next.js 15.5.18
-   - Local:        http://localhost:3000
+   - Local:        https://baba-store.vercel.app/
    - Network:      http://10.208.132.123:3000
    - Environments: .env
 

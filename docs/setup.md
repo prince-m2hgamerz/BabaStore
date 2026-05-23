@@ -5,7 +5,7 @@
 Copy `.env.example` to `.env.local` and fill:
 
 ```env
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=https://baba-store.vercel.app/
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 RESEND_API_KEY=your-resend-key
@@ -18,8 +18,8 @@ RESEND_FROM_EMAIL="BabaStore <noreply@your-domain.com>"
 2. Run `supabase/schema.sql` in the SQL editor.
 3. In Authentication settings, enable email/password.
 4. Set email confirmation and reset redirect URLs to:
-   - `http://localhost:3000/dashboard`
-   - `http://localhost:3000/reset-password`
+   - `https://baba-store.vercel.app//dashboard`
+   - `https://baba-store.vercel.app//reset-password`
 5. For production, replace localhost URLs with the Vercel domain.
 
 ## Roles

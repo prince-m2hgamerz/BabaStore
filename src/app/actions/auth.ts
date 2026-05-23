@@ -10,7 +10,7 @@ import {
 import { roleHome, roles, type UserRole } from "@/lib/constants";
 import { canAccessPath } from "@/lib/auth/routes";
 import { notifyNewUser } from "@/lib/notifications/telegram";
-import { sendWelcomeEmail } from "@/lib/notifications/email";
+import { sendConfirmationEmail, sendWelcomeEmail } from "@/lib/notifications/email";
 
 export type AuthActionState = {
   ok: boolean;
@@ -18,7 +18,7 @@ export type AuthActionState = {
 };
 
 function getSiteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://baba-store.vercel.app/";
 }
 
 function envReady() {
@@ -143,11 +143,12 @@ export async function registerAction(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const redirectTo = `${getSiteUrl()}/auth/confirm?next=${roleHome[parsed.data.role]}`;
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      emailRedirectTo: `${getSiteUrl()}${roleHome[parsed.data.role]}`,
+      emailRedirectTo: redirectTo,
       data: {
         username: parsed.data.username,
         role: parsed.data.role
@@ -163,11 +164,16 @@ export async function registerAction(
   }
 
   notifyNewUser(parsed.data.email);
-  sendWelcomeEmail(parsed.data.email);
+
+  if (data?.user?.email_confirmed_at) {
+    sendWelcomeEmail(parsed.data.email, parsed.data.username);
+  }
 
   return {
     ok: true,
-    message: "Check your email to confirm your BabaStore account."
+    message: data?.user?.email_confirmed_at
+      ? "Account created! Welcome to BabaStore."
+      : "Check your email to confirm your BabaStore account."
   };
 }
 
