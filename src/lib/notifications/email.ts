@@ -1,8 +1,8 @@
 import { Resend } from "resend";
 
 const RESEND_KEY = process.env.RESEND_API_KEY;
-const FROM = process.env.RESEND_FROM_EMAIL ?? "BabaStore <noreply@babastore.m2hio.in>";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://baba-store.vercel.app/";
+const FROM = process.env.RESEND_FROM_EMAIL!;
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!;
 
 function getClient() {
   if (!RESEND_KEY) return null;

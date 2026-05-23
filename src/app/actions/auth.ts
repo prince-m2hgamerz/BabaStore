@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -10,7 +11,7 @@ import {
 import { roleHome, roles, type UserRole } from "@/lib/constants";
 import { canAccessPath } from "@/lib/auth/routes";
 import { notifyNewUser } from "@/lib/notifications/telegram";
-import { sendConfirmationEmail, sendWelcomeEmail } from "@/lib/notifications/email";
+import { sendWelcomeEmail } from "@/lib/notifications/email";
 
 export type AuthActionState = {
   ok: boolean;
@@ -18,7 +19,7 @@ export type AuthActionState = {
 };
 
 function getSiteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://baba-store.vercel.app/";
+  return process.env.NEXT_PUBLIC_SITE_URL!;
 }
 
 function envReady() {
@@ -142,17 +143,14 @@ export async function registerAction(
     };
   }
 
-  const supabase = await createClient();
-  const redirectTo = `${getSiteUrl()}/auth/confirm?next=${roleHome[parsed.data.role]}`;
-  const { data, error } = await supabase.auth.signUp({
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient.auth.admin.createUser({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: {
-      emailRedirectTo: redirectTo,
-      data: {
-        username: parsed.data.username,
-        role: parsed.data.role
-      }
+    email_confirm: true,
+    user_metadata: {
+      username: parsed.data.username,
+      role: parsed.data.role
     }
   });
 
@@ -165,15 +163,13 @@ export async function registerAction(
 
   notifyNewUser(parsed.data.email);
 
-  if (data?.user?.email_confirmed_at) {
+  if (data?.user) {
     sendWelcomeEmail(parsed.data.email, parsed.data.username);
   }
 
   return {
     ok: true,
-    message: data?.user?.email_confirmed_at
-      ? "Account created! Welcome to BabaStore."
-      : "Check your email to confirm your BabaStore account."
+    message: "Account created! Welcome to BabaStore."
   };
 }
 

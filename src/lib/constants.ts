@@ -3,7 +3,7 @@ export const siteConfig = {
   shortName: "BabaStore",
   description:
     "Discover and install Android APKs on BabaStore — the open Android app marketplace. Browse thousands of free apps, games, tools, and VPNs. Publish your own Android apps with our developer console. Safe APK downloads, ratings, reviews, and wishlists.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://baba-store.vercel.app/",
+  url: process.env.NEXT_PUBLIC_SITE_URL!,
   keywords: [
     "Android apps",
     "APK download",

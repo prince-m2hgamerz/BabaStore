@@ -3,6 +3,10 @@ import { getCatalogApp } from "@/lib/catalog/catalog";
 
 export const runtime = "edge";
 
+const domain = (process.env.NEXT_PUBLIC_SITE_URL ?? "")
+  .replace(/^https?:\/\//, "")
+  .replace(/\/$/, "");
+
 export const alt = "BabaStore — Download Free Android APKs";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -146,7 +150,7 @@ export default async function Image({
             BabaStore
           </span>
           <span style={{ fontSize: 16, color: "#888" }}>
-            babastore.m2hio.in
+            {domain}
           </span>
         </div>
       </div>
