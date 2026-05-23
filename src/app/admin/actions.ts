@@ -7,15 +7,16 @@ import {
   deleteAnnouncement,
   deleteCategory,
   deleteReview,
+  getUserEmailsByRoleFilter,
   respondToReview,
   saveAnnouncement,
   updateAppsStatus,
   updateUserRole,
   upsertCategory
 } from "@/lib/admin/admin";
-import { sendAppPublishedEmail, sendReviewNotificationEmail } from "@/lib/notifications/email";
-import type { AppStatus } from "@/lib/supabase/types";
+import { sendAppPublishedEmail, sendReviewNotificationEmail, sendMarketingEmail } from "@/lib/notifications/email";
 import type { UserRole } from "@/lib/constants";
+import type { AppStatus } from "@/lib/supabase/types";
 
 const appStatuses = new Set<AppStatus>(["draft", "published", "rejected", "flagged"]);
 const userRoles = new Set<UserRole>(["user", "developer", "admin"]);
@@ -141,14 +142,18 @@ export async function saveAnnouncementAction(formData: FormData) {
 
   if (!title || !body) return;
 
-  await saveAnnouncement({
-    id,
-    title,
-    body,
-    is_active: isActive
-  });
-  revalidatePath("/admin/announcements");
-  revalidatePath("/");
+  try {
+    await saveAnnouncement({
+      id,
+      title,
+      body,
+      is_active: isActive
+    });
+    revalidatePath("/admin/announcements");
+    revalidatePath("/");
+  } catch (err) {
+    console.error("saveAnnouncement failed:", err);
+  }
 }
 
 export async function deleteAnnouncementAction(formData: FormData) {
@@ -156,7 +161,57 @@ export async function deleteAnnouncementAction(formData: FormData) {
   const announcementId = String(formData.get("announcementId") ?? "");
   if (!announcementId) return;
 
-  await deleteAnnouncement(announcementId);
-  revalidatePath("/admin/announcements");
-  revalidatePath("/");
+  try {
+    await deleteAnnouncement(announcementId);
+    revalidatePath("/admin/announcements");
+    revalidatePath("/");
+  } catch (err) {
+    console.error("deleteAnnouncement failed:", err);
+  }
+}
+
+export async function sendMarketingAction(
+  _prevState: { ok: boolean; message: string; sent: number; failed: number },
+  formData: FormData
+): Promise<{ ok: boolean; message: string; sent: number; failed: number }> {
+  void _prevState;
+  await requireRole(["admin"]);
+
+  const subject = String(formData.get("subject") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
+  const audience = String(formData.get("audience") ?? "all");
+
+  if (!subject || !body) {
+    return { ok: false, message: "Subject and body are required.", sent: 0, failed: 0 };
+  }
+
+  let emails: string[] = [];
+
+  if (audience === "custom") {
+    const custom = String(formData.get("customEmails") ?? "").trim();
+    emails = custom
+      .split(/[\n,;]+/)
+      .map((e) => e.trim())
+      .filter((e) => e.includes("@"));
+  } else {
+    const role = audience === "all" ? undefined : (audience as UserRole);
+    emails = await getUserEmailsByRoleFilter(role);
+  }
+
+  if (!emails.length) {
+    return { ok: false, message: "No recipients found for the selected audience.", sent: 0, failed: 0 };
+  }
+
+  const results = await sendMarketingEmail({ to: emails, subject, body });
+  const sent = results.filter((r) => r.ok).length;
+  const failed = results.filter((r) => !r.ok).length;
+
+  revalidatePath("/admin/email");
+
+  return {
+    ok: failed === 0,
+    message: `Sent to ${sent} recipient${sent !== 1 ? "s" : ""}${failed ? ` (${failed} failed)` : ""}.`,
+    sent,
+    failed
+  };
 }

@@ -146,3 +146,36 @@ export async function sendReviewNotificationEmail(
     `
   });
 }
+
+export async function sendMarketingEmail(params: {
+  to: string[];
+  subject: string;
+  body: string;
+}): Promise<{ email: string; ok: boolean; error?: string }[]> {
+  if (!params.to.length) return [];
+  const resend = getClient();
+  if (!resend) return [];
+
+  const results: { email: string; ok: boolean; error?: string }[] = [];
+
+  for (const email of params.to) {
+    try {
+      await resend.emails.send({
+        from: FROM,
+        to: [email],
+        subject: params.subject,
+        html: emailLayout(`
+          <h2 style="font-size:20px;font-weight:600;margin:0 0 8px">${params.subject}</h2>
+          <div style="margin:0 0 16px;color:#4d4d4d;line-height:1.7">${params.body.replace(/\n/g, "<br>")}</div>
+          <hr style="border:none;border-top:1px solid #ebebeb;margin:24px 0">
+          <p style="color:#888;font-size:12px">You received this email because you have an account on BabaStore. To unsubscribe, contact us at support@babastore.m2hio.in.</p>
+        `)
+      });
+      results.push({ email, ok: true });
+    } catch (err) {
+      results.push({ email, ok: false, error: String(err) });
+    }
+  }
+
+  return results;
+}

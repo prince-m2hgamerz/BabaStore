@@ -6,6 +6,7 @@ import {
   Star,
   Trash2
 } from "lucide-react";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,47 +50,33 @@ export default async function AdminReviewsPage({
       : "N/A";
 
   return (
-    <div className="grid gap-4">
-      <header>
-        <p className="mono-label">BabaStore</p>
-        <h1 className="mt-0.5 text-xl font-semibold tracking-normal text-neutral-950 sm:text-3xl">
-          Reviews
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm leading-6 text-neutral-600">
-          Moderate user reviews, respond to feedback, and remove inappropriate content.
-        </p>
-      </header>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Total reviews</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-neutral-950">{total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Average rating</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 text-2xl font-semibold text-neutral-950">
-              {avgRating}
-              <Star className="size-5 fill-amber-400 text-amber-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-neutral-600">Unresponded</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-neutral-950">
-              {reviews.filter((r) => !r.developerResponse).length}
-            </div>
-          </CardContent>
-        </Card>
+    <DashboardShell
+      section="admin"
+      title="Reviews"
+      description="Moderate user reviews, respond to feedback, and remove inappropriate content."
+    >
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[
+          { title: "Total reviews", value: total, icon: MessageSquareText },
+          { title: "Average rating", value: avgRating, icon: Star, suffix: <Star className="size-4 fill-amber-400 text-amber-400" /> },
+          { title: "Unresponded", value: reviews.filter((r) => !r.developerResponse).length, icon: MessageSquareText }
+        ].map((m) => (
+          <Card key={m.title} className="min-w-0 overflow-hidden transition-shadow hover:shadow-md">
+            <div className="h-1 w-full bg-gradient-to-r from-primary/60 to-primary/30" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="min-w-0 truncate text-sm font-medium text-neutral-500">{m.title}</CardTitle>
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <m.icon className="size-4" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-2xl font-bold tracking-tight text-neutral-950">
+                {m.value}
+                {m.suffix}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <Card>
@@ -206,6 +193,6 @@ export default async function AdminReviewsPage({
           )}
         </CardContent>
       </Card>
-    </div>
+    </DashboardShell>
   );
 }

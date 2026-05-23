@@ -12,6 +12,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { getAnnouncements } from "@/lib/admin/admin";
 import { formatDate, formatDownloads } from "@/lib/catalog/catalog";
 import { deleteAnnouncementAction, saveAnnouncementAction } from "@/app/admin/actions";
+import { AnnouncementsSetup } from "./announcements-setup";
 
 export const metadata = {
   title: "Admin Announcements"
@@ -30,6 +31,7 @@ export default async function AdminAnnouncementsPage() {
     >
       <div className="grid gap-4">
         {missingEnv ? <EnvWarning /> : null}
+        <AnnouncementsSetup />
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard title="Announcements" value={formatDownloads(announcements.length)} helper="All saved messages" icon={Megaphone} />
           <StatCard title="Active" value={formatDownloads(activeCount)} helper="Visible to users" icon={Radio} />

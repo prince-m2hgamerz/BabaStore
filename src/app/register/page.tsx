@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RegisterForm } from "@/components/auth/register-form";
+import { LogoMark } from "@/components/brand/logo";
 import { Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -14,9 +15,7 @@ export default function RegisterPage() {
       <div className="hidden w-[480px] flex-col justify-between bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 p-10 lg:flex">
         <div>
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-blue-900">
-              B
-            </div>
+            <LogoMark className="size-9" />
             <span className="text-lg font-semibold text-white">BabaStore</span>
           </Link>
         </div>
@@ -56,8 +55,8 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="mb-8 flex flex-col items-center lg:hidden">
-            <Link href="/" className="mb-4 flex size-12 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold text-white">
-              B
+            <Link href="/" className="mb-4">
+              <LogoMark />
             </Link>
             <h1 className="text-xl font-bold text-neutral-900">Create your account</h1>
             <p className="mt-1 text-sm text-neutral-500">

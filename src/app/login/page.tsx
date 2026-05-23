@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
+import { LogoMark } from "@/components/brand/logo";
 import { Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -22,9 +23,7 @@ export default async function LoginPage({
       <div className="hidden w-[480px] flex-col justify-between bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-800 p-10 lg:flex">
         <div>
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-neutral-900">
-              B
-            </div>
+            <LogoMark className="size-9" />
             <span className="text-lg font-semibold text-white">BabaStore</span>
           </Link>
         </div>
@@ -51,8 +50,8 @@ export default async function LoginPage({
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="mb-8 flex flex-col items-center lg:hidden">
-            <Link href="/" className="mb-4 flex size-12 items-center justify-center rounded-xl bg-neutral-950 text-lg font-bold text-white">
-              B
+            <Link href="/" className="mb-4">
+              <LogoMark />
             </Link>
             <h1 className="text-xl font-bold text-neutral-900">Welcome back</h1>
             <p className="mt-1 text-sm text-neutral-500">

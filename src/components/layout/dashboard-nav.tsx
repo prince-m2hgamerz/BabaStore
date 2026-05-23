@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   BarChart3,
   Boxes,
   Download,
@@ -14,6 +15,7 @@ import {
   Menu,
   MessageSquareText,
   PackagePlus,
+  Send,
   Settings,
   ShieldCheck,
   Tags,
@@ -52,8 +54,10 @@ export const navBySection = {
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/categories", label: "Categories", icon: Tags },
     { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
+    { href: "/admin/email", label: "Email Marketing", icon: Send },
     { href: "/admin/feedback", label: "Feedback", icon: BarChart3 },
-    { href: "/admin/reports", label: "Reports", icon: Flag }
+    { href: "/admin/reports", label: "Reports", icon: Flag },
+    { href: "/admin/settings", label: "System Health", icon: Activity }
   ]
 } as const;
 
@@ -98,64 +102,70 @@ export function DashboardNav({
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-neutral-200 bg-white p-5 shadow-glass lg:block">
-        <Logo />
-        <div className="mt-8">{links}</div>
-        <form action={signOutAction} className="absolute inset-x-5 bottom-5">
-          <button
-            type="submit"
-            className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
-          >
-            <LogOut className="size-4" />
-            Sign out
-          </button>
-        </form>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-neutral-200 bg-white shadow-glass lg:flex lg:flex-col">
+        <div className="border-b border-neutral-100 px-5 py-5">
+          <Logo />
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 py-5">{links}</div>
+        <div className="border-t border-neutral-100 px-4 py-4">
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-neutral-500 transition hover:bg-red-50 hover:text-red-600"
+            >
+              <LogOut className="size-4" />
+              Sign out
+            </button>
+          </form>
+        </div>
       </aside>
 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed left-3 top-3 z-50 inline-flex size-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-950 shadow-float sm:left-4 sm:top-5 sm:size-10 lg:hidden"
+        className="fixed left-3 top-[9px] z-50 inline-flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-700 shadow-float transition hover:bg-neutral-50 hover:text-neutral-950 active:scale-95 sm:left-4 sm:top-4 sm:size-10 lg:hidden"
         aria-label="Open navigation"
         aria-expanded={open}
       >
-        <Menu className="size-5" />
+        <Menu className="size-4 sm:size-5" />
       </button>
 
       <div
         className={cn(
-          "fixed inset-0 z-50 bg-neutral-950/40 opacity-0 backdrop-blur-sm transition pointer-events-none lg:hidden",
+          "fixed inset-0 z-50 bg-neutral-950/60 opacity-0 backdrop-blur-sm transition-all duration-200 pointer-events-none lg:hidden",
           open && "pointer-events-auto opacity-100"
         )}
         onClick={() => setOpen(false)}
       />
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[min(88vw,320px)] -translate-x-full flex-col border-r border-neutral-200 bg-white p-5 shadow-float transition-transform duration-200 lg:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col border-r border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ease-out lg:hidden",
           open && "translate-x-0"
         )}
       >
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 border-b border-neutral-100 px-5 py-4">
           <Logo />
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="inline-flex size-10 items-center justify-center rounded-full border border-neutral-200 text-neutral-600"
+            className="inline-flex size-9 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition hover:bg-neutral-50 hover:text-neutral-950 active:scale-95"
             aria-label="Close navigation"
           >
-            <X className="size-5" />
+            <X className="size-4" />
           </button>
         </div>
-        <div className="mt-8 min-h-0 flex-1 overflow-y-auto pr-1">{links}</div>
-        <form action={signOutAction} className="pt-4">
-          <button
-            type="submit"
-            className="flex min-h-11 w-full items-center gap-3 rounded-md border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
-          >
-            <LogOut className="size-4" />
-            Sign out
-          </button>
-        </form>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">{links}</div>
+        <div className="border-t border-neutral-100 px-4 py-4">
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="flex min-h-11 w-full items-center gap-3 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-600 transition hover:bg-red-50 hover:border-red-200 hover:text-red-600"
+            >
+              <LogOut className="size-4" />
+              Sign out
+            </button>
+          </form>
+        </div>
       </aside>
     </>
   );

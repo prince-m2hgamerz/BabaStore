@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { AppStatus, Database } from "@/lib/supabase/types";
 import { formatBytes } from "@/lib/catalog/catalog";
+import type { UserRole } from "@/lib/constants";
 
 type AppRow = Database["public"]["Tables"]["apps"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -245,13 +247,7 @@ export async function deleteCategory(categoryId: string) {
 
 export async function getAnnouncements(): Promise<Announcement[]> {
   try {
-    const supabase = (await createClient()) as unknown as {
-      from(table: string): {
-        select(columns: string): {
-          order(column: string, options: { ascending: boolean }): Promise<{ data: Announcement[] | null; error: { message: string } | null }>;
-        };
-      };
-    };
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from("announcements")
       .select("*")
@@ -270,12 +266,7 @@ export async function saveAnnouncement(input: {
   body: string;
   is_active: boolean;
 }) {
-  const supabase = (await createClient()) as unknown as {
-    from(table: string): {
-      insert(payload: unknown): Promise<{ error: { message: string } | null }>;
-      update(payload: unknown): { eq(column: string, value: string): Promise<{ error: { message: string } | null }> };
-    };
-  };
+  const supabase = createAdminClient();
   const payload = {
     title: input.title,
     body: input.body,
@@ -290,11 +281,7 @@ export async function saveAnnouncement(input: {
 }
 
 export async function deleteAnnouncement(announcementId: string) {
-  const supabase = (await createClient()) as unknown as {
-    from(table: string): {
-      delete(): { eq(column: string, value: string): Promise<{ error: { message: string } | null }> };
-    };
-  };
+  const supabase = createAdminClient();
   const { error } = await supabase.from("announcements").delete().eq("id", announcementId);
   if (error) throw new Error(error.message);
 }
@@ -545,15 +532,7 @@ export async function deleteReview(reviewId: string) {
 
 export async function getUploadScans(limit = 100): Promise<UploadScan[]> {
   try {
-    const supabase = (await createClient()) as unknown as {
-      from(table: string): {
-        select(columns: string): {
-          order(column: string, options: { ascending: boolean }): {
-            limit(limit: number): Promise<{ data: UploadScan[] | null; error: { message: string } | null }>;
-          };
-        };
-      };
-    };
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from("upload_scans")
       .select("*")
@@ -640,4 +619,54 @@ function emptyOverview(): AdminOverview {
       storageLabel: "0 MB"
     }
   };
+}
+
+export async function getUserEmailsByRole(): Promise<string[]> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("profiles").select("email");
+    if (error || !data) return [];
+    return data.map((p) => p.email).filter(Boolean) as string[];
+  } catch {
+    return [];
+  }
+}
+
+export async function getUserEmailsByRoleFilter(role?: UserRole): Promise<string[]> {
+  try {
+    const supabase = await createClient();
+    let query = supabase.from("profiles").select("email");
+    if (role) {
+      query = query.eq("role", role);
+    }
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map((p) => p.email).filter(Boolean) as string[];
+  } catch {
+    return [];
+  }
+}
+
+export async function getSystemStatus() {
+  const checks: Record<string, "ok" | "error" | "missing"> = {};
+
+  checks["Supabase DB"] =
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      ? "ok"
+      : "missing";
+
+  checks["Supabase Auth"] = process.env.SUPABASE_SERVICE_ROLE_KEY ? "ok" : "missing";
+
+  checks["Resend"] = process.env.RESEND_API_KEY ? "ok" : "missing";
+
+  checks["Cloudflare R2"] = process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN ? "ok" : "missing";
+
+  checks["VirusTotal"] = process.env.VIRUSTOTAL_API_KEY ? "ok" : "missing";
+
+  checks["AI (NVIDIA/Gemini)"] =
+    process.env.NVIDIA_API_KEY || process.env.GEMINI_API_KEY ? "ok" : "missing";
+
+  checks["Telegram Bot"] = process.env.VITE_TELEGRAM_BOT_TOKEN ? "ok" : "missing";
+
+  return checks;
 }

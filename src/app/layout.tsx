@@ -68,8 +68,8 @@ export const metadata: Metadata = {
     creator: "@babastore"
   },
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/favicon.svg", sizes: "any", type: "image/svg+xml" }]
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.svg", sizes: "any", type: "image/svg+xml" }]
   },
   manifest: "/manifest.json",
   category: "technology",

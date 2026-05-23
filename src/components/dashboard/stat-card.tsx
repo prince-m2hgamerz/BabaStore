@@ -13,14 +13,17 @@ export function StatCard({
   icon: LucideIcon;
 }) {
   return (
-    <Card className="glass-hover min-w-0">
+    <Card className="min-w-0 overflow-hidden transition-shadow hover:shadow-md">
+      <div className="h-1 w-full bg-gradient-to-r from-primary/60 to-primary/30" />
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="min-w-0 truncate text-sm font-medium text-neutral-600">{title}</CardTitle>
-        <Icon className="size-4 shrink-0 text-primary" />
+        <CardTitle className="min-w-0 truncate text-sm font-medium text-neutral-500">{title}</CardTitle>
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Icon className="size-4" />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="break-words text-2xl font-semibold text-neutral-950">{value}</div>
-        <p className="mt-1 text-xs leading-5 text-neutral-500">{helper}</p>
+        <div className="break-words text-2xl font-bold tracking-tight text-neutral-950">{value}</div>
+        <p className="mt-1 text-xs leading-5 text-neutral-400">{helper}</p>
       </CardContent>
     </Card>
   );
