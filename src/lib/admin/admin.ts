@@ -647,6 +647,106 @@ export async function getUserEmailsByRoleFilter(role?: UserRole): Promise<string
   }
 }
 
+export type TelegramAutomation = {
+  id: string;
+  name: string;
+  is_active: boolean;
+  trigger_type: "all" | "keyword" | "regex";
+  trigger_pattern: string | null;
+  reply_style: "concise" | "detailed" | "friendly" | "professional";
+  max_tokens: number;
+  temperature: number;
+  allowed_chat_ids: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getTelegramAutomations(): Promise<TelegramAutomation[]> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tb = (await createClient()).from("telegram_automations") as any;
+    const { data, error } = await tb
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error || !data) return [];
+    return data as TelegramAutomation[];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveTelegramAutomation(input: {
+  id?: string;
+  name: string;
+  is_active: boolean;
+  trigger_type: "all" | "keyword" | "regex";
+  trigger_pattern: string | null;
+  reply_style: "concise" | "detailed" | "friendly" | "professional";
+  max_tokens: number;
+  temperature: number;
+  allowed_chat_ids: string[];
+}) {
+  const supabase = createAdminClient();
+  const payload = {
+    name: input.name,
+    is_active: input.is_active,
+    trigger_type: input.trigger_type,
+    trigger_pattern: input.trigger_pattern || null,
+    reply_style: input.reply_style,
+    max_tokens: input.max_tokens,
+    temperature: input.temperature,
+    allowed_chat_ids: input.allowed_chat_ids,
+    updated_at: new Date().toISOString()
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tb = supabase.from("telegram_automations") as any;
+  const { error } = input.id
+    ? await tb.update(payload).eq("id", input.id)
+    : await tb.insert(payload);
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteTelegramAutomation(id: string) {
+  const supabase = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tb = supabase.from("telegram_automations") as any;
+  const { error } = await tb.delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function getTelegramChatLogs(limit = 50): Promise<Array<{
+  id: string;
+  chat_id: string;
+  message_id: number | null;
+  direction: "incoming" | "outgoing";
+  text: string;
+  reply: string | null;
+  automation_id: string | null;
+  created_at: string;
+}>> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tb = (await createClient()).from("telegram_chat_logs") as any;
+    const { data, error } = await tb
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error || !data) return [];
+    return data as Array<{
+      id: string;
+      chat_id: string;
+      message_id: number | null;
+      direction: "incoming" | "outgoing";
+      text: string;
+      reply: string | null;
+      automation_id: string | null;
+      created_at: string;
+    }>;
+  } catch {
+    return [];
+  }
+}
+
 export async function getSystemStatus() {
   const checks: Record<string, "ok" | "error" | "missing"> = {};
 

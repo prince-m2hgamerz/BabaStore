@@ -22,5 +22,6 @@ export {
 
 export {
   getNvidiaRecommendations,
-  getNvidiaAssistantResponse
+  getNvidiaAssistantResponse,
+  generateTelegramReply
 } from "./nvidia";

@@ -180,6 +180,76 @@ alter table public.wishlist_items enable row level security;
 alter table public.announcements enable row level security;
 alter table public.upload_scans enable row level security;
 
+-- Telegram auto-reply engine tables
+create table public.telegram_automations (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  is_active boolean not null default true,
+  trigger_type text not null default 'all' check (trigger_type in ('all', 'keyword', 'regex')),
+  trigger_pattern text,
+  reply_style text not null default 'concise' check (reply_style in ('concise', 'detailed', 'friendly', 'professional')),
+  max_tokens int not null default 150,
+  temperature float not null default 0.5,
+  allowed_chat_ids text[] default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.telegram_chat_logs (
+  id uuid primary key default gen_random_uuid(),
+  chat_id text not null,
+  message_id bigint,
+  direction text not null check (direction in ('incoming', 'outgoing')),
+  text text not null,
+  reply text,
+  automation_id uuid references public.telegram_automations(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.telegram_automations enable row level security;
+alter table public.telegram_chat_logs enable row level security;
+
+create policy "admins manage telegram automations"
+on public.telegram_automations for all
+using (public.current_role() = 'admin')
+with check (public.current_role() = 'admin');
+
+create policy "admins read telegram logs"
+on public.telegram_chat_logs for select
+using (public.current_role() = 'admin');
+
+create policy "service role can insert telegram logs"
+on public.telegram_chat_logs for insert
+with check (true);
+
+create trigger telegram_automations_set_updated_at
+before update on public.telegram_automations
+for each row execute function public.set_updated_at();
+
+-- Personal Telegram account (MTProto) for auto-replying as the user
+create table public.telegram_account (
+  id uuid primary key default gen_random_uuid(),
+  phone text not null,
+  session_string text,
+  temp_session text,
+  phone_code_hash text,
+  is_connected boolean not null default false,
+  auto_reply_enabled boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.telegram_account enable row level security;
+
+create policy "admins manage telegram account"
+on public.telegram_account for all
+using (public.current_role() = 'admin')
+with check (public.current_role() = 'admin');
+
+create trigger telegram_account_set_updated_at
+before update on public.telegram_account
+for each row execute function public.set_updated_at();
+
 create or replace function public.current_role()
 returns public.user_role
 language sql

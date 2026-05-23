@@ -7,14 +7,17 @@ import {
   deleteAnnouncement,
   deleteCategory,
   deleteReview,
+  deleteTelegramAutomation,
   getUserEmailsByRoleFilter,
   respondToReview,
   saveAnnouncement,
+  saveTelegramAutomation,
   updateAppsStatus,
   updateUserRole,
   upsertCategory
 } from "@/lib/admin/admin";
 import { sendAppPublishedEmail, sendReviewNotificationEmail, sendMarketingEmail } from "@/lib/notifications/email";
+import { sendTelegramMessage, getBotMe, getWebhookInfo } from "@/lib/notifications/telegram";
 import type { UserRole } from "@/lib/constants";
 import type { AppStatus } from "@/lib/supabase/types";
 
@@ -214,4 +217,85 @@ export async function sendMarketingAction(
     sent,
     failed
   };
+}
+
+export async function sendTelegramBroadcastAction(
+  _prevState: { ok: boolean; message: string },
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
+  void _prevState;
+  await requireRole(["admin"]);
+
+  const chatId = String(formData.get("chatId") ?? "").trim();
+  const text = String(formData.get("text") ?? "").trim();
+
+  if (!chatId || !text) {
+    return { ok: false, message: "Chat ID and message are required." };
+  }
+
+  const result = await sendTelegramMessage(chatId, text, "MarkdownV2");
+  if (result.ok) {
+    return { ok: true, message: "Message sent successfully." };
+  }
+  return { ok: false, message: result.error ?? "Failed to send message." };
+}
+
+export async function saveTelegramAutomationAction(
+  _prevState: { ok: boolean; message: string },
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
+  void _prevState;
+  await requireRole(["admin"]);
+  const id = String(formData.get("id") ?? "") || undefined;
+  const name = String(formData.get("name") ?? "").trim();
+  const isActive = formData.get("isActive") === "on";
+  const triggerType = String(formData.get("triggerType") ?? "all") as "all" | "keyword" | "regex";
+  const triggerPattern = String(formData.get("triggerPattern") ?? "").trim() || null;
+  const replyStyle = String(formData.get("replyStyle") ?? "concise") as "concise" | "detailed" | "friendly" | "professional";
+  const maxTokens = parseInt(String(formData.get("maxTokens") ?? "150"), 10) || 150;
+  const temperature = parseFloat(String(formData.get("temperature") ?? "0.5")) || 0.5;
+  const allowedChatIdsRaw = String(formData.get("allowedChatIds") ?? "").trim();
+
+  if (!name) return { ok: false, message: "Rule name is required." };
+
+  const allowedChatIds = allowedChatIdsRaw
+    ? allowedChatIdsRaw.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  try {
+    await saveTelegramAutomation({
+      id,
+      name,
+      is_active: isActive,
+      trigger_type: triggerType,
+      trigger_pattern: triggerPattern,
+      reply_style: replyStyle,
+      max_tokens: maxTokens,
+      temperature,
+      allowed_chat_ids: allowedChatIds
+    });
+    revalidatePath("/admin/telegram");
+    return { ok: true, message: id ? "Rule updated." : "Rule created." };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  }
+}
+
+export async function deleteTelegramAutomationAction(formData: FormData) {
+  await requireRole(["admin"]);
+  const id = String(formData.get("automationId") ?? "");
+  if (!id) return;
+  try {
+    await deleteTelegramAutomation(id);
+    revalidatePath("/admin/telegram");
+  } catch (err) {
+    console.error("deleteTelegramAutomation failed:", err);
+  }
+}
+
+export async function getTelegramBotInfoAction() {
+  await requireRole(["admin"]);
+  const bot = await getBotMe();
+  const webhook = await getWebhookInfo();
+  return { bot, webhook };
 }

@@ -18,6 +18,7 @@ import {
   Send,
   Settings,
   ShieldCheck,
+  Smartphone,
   Tags,
   Users,
   X,
@@ -55,6 +56,7 @@ export const navBySection = {
     { href: "/admin/categories", label: "Categories", icon: Tags },
     { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
     { href: "/admin/email", label: "Email Marketing", icon: Send },
+    { href: "/admin/telegram", label: "Telegram Bot", icon: Smartphone },
     { href: "/admin/feedback", label: "Feedback", icon: BarChart3 },
     { href: "/admin/reports", label: "Reports", icon: Flag },
     { href: "/admin/settings", label: "System Health", icon: Activity }
