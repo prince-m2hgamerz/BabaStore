@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef } from "react";
 import {
   CheckCircle2,
   Loader2,
@@ -10,8 +10,7 @@ import {
   Shield,
   XCircle,
   User,
-  Play,
-  Pause
+  Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +28,6 @@ export function PersonalAccountForm({ initial }: { initial: Status }) {
   const phoneRef = useRef<HTMLInputElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [status, setStatus] = useState<Status>(initial);
   const [step, setStep] = useState<"idle" | "sent" | "password">(
@@ -38,35 +36,6 @@ export function PersonalAccountForm({ initial }: { initial: Status }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const polling = status.connected && status.autoReplyEnabled;
-
-  const doPoll = useCallback(async () => {
-    try {
-      const res = await fetch("/api/telegram/user/check-messages", { method: "POST" });
-      const data = await res.json();
-      if (data.error) {
-        console.warn("Auto-poll:", data.error);
-        return;
-      }
-      if (data.replied > 0) {
-        setMessage(`Auto-replied to ${data.replied} conversation(s).`);
-        setTimeout(() => setMessage(""), 5000);
-      }
-    } catch {
-      // silent
-    }
-  }, []);
-
-  useEffect(() => {
-    if (status.connected && status.autoReplyEnabled) {
-      const id = setInterval(doPoll, 15000);
-      pollRef.current = id;
-      return () => {
-        clearInterval(id);
-        pollRef.current = null;
-      };
-    }
-  }, [status.connected, status.autoReplyEnabled, doPoll]);
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -207,23 +176,10 @@ export function PersonalAccountForm({ initial }: { initial: Status }) {
             </Button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={checkMessages} disabled={loading}>
-              {loading ? <Loader2 className="size-3 animate-spin" /> : <Play className="size-3" />}
-              Check Messages Now
-            </Button>
-            {polling ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-                <Pause className="size-3" />
-                Auto-reply active (15s)
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-500">
-                <Pause className="size-3" />
-                Auto-reply paused
-              </span>
-            )}
-          </div>
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={checkMessages} disabled={loading}>
+            {loading ? <Loader2 className="size-3 animate-spin" /> : <Play className="size-3" />}
+            Check Messages Now
+          </Button>
         </div>
       ) : step === "sent" || step === "password" ? (
         <form onSubmit={verifyCode} className="grid gap-4">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
   Bot,
   BrainCircuit,
+  Cloud,
   MessageSquare,
   Send,
   Settings2,
@@ -20,6 +21,7 @@ import { TelegramBroadcastForm } from "./telegram-broadcast-form";
 import { AutomationRuleForm } from "./automation-rule-form";
 import { PersonalAccountForm } from "./personal-account-form";
 import { deleteTelegramAutomationAction } from "@/app/admin/actions";
+import { IntervalWorkerStatus } from "./interval-worker-status";
 
 export const metadata: Metadata = {
   title: "Telegram Bot"
@@ -38,6 +40,7 @@ export default async function TelegramBotPage() {
   const hasToken = Boolean(process.env.VITE_TELEGRAM_BOT_TOKEN);
   const hasNvidia = Boolean(process.env.NVIDIA_API_KEY);
   const hasApiCreds = Boolean(process.env.TELEGRAM_API_ID && process.env.TELEGRAM_API_HASH);
+  const hasEdgeFunction = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   return (
     <DashboardShell
@@ -46,7 +49,7 @@ export default async function TelegramBotPage() {
       description="Auto-reply to Telegram messages as your personal account using NVIDIA AI. Manage rules, send broadcasts, and monitor activity."
     >
       <div className="grid gap-4 sm:gap-6">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <Card className="min-w-0 overflow-hidden transition-shadow hover:shadow-md">
             <div className="h-1 w-full bg-gradient-to-r from-sky-500 to-sky-300" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -147,6 +150,23 @@ export default async function TelegramBotPage() {
                 {rules.filter((r) => r.is_active).length} active
                 {rules.length ? ` \u00b7 ${rules.filter((r) => r.trigger_type === "keyword").length} keyword, ${rules.filter((r) => r.trigger_type === "all").length} catch-all` : ""}
               </p>
+            </CardContent>
+          </Card>
+
+          <Card className="min-w-0 overflow-hidden transition-shadow hover:shadow-md">
+            <div className="h-1 w-full bg-gradient-to-r from-indigo-500 to-indigo-300" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="min-w-0 truncate text-sm font-medium text-neutral-500">24/7 Auto-Reply</CardTitle>
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+                <Cloud className="size-4" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <IntervalWorkerStatus
+                connected={accountStatus.connected}
+                autoReplyEnabled={accountStatus.autoReplyEnabled}
+                hasEdgeFunction={hasEdgeFunction}
+              />
             </CardContent>
           </Card>
         </div>
