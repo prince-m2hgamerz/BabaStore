@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, Mail, Loader2 } from "lucide-react";
 import {
   forgotPasswordAction,
   type AuthActionState
@@ -24,23 +24,33 @@ export function ForgotPasswordForm() {
   );
 
   return (
-    <form action={formAction} className="grid gap-4">
+    <form action={formAction} className="grid gap-5">
       <AuthMessage state={state} />
-      <div className="grid gap-2">
+      <div className="grid gap-1.5">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
+        <div className="relative">
+          <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            className="pl-9"
+            required
+          />
+        </div>
       </div>
-      <Button type="submit" className="mt-2" disabled={pending}>
-        <Mail />
+      <Button type="submit" size="lg" className="w-full" disabled={pending}>
+        {pending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
         Send reset link
       </Button>
-      <Button variant="ghost" asChild>
+      <Button variant="ghost" size="sm" asChild className="w-full">
         <Link href="/login">
-          <ArrowLeft />
+          <ArrowLeft className="size-4" />
           Back to sign in
         </Link>
       </Button>
     </form>
   );
 }
-

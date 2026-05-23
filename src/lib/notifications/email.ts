@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const RESEND_KEY = process.env.RESEND_API_KEY;
 const FROM = process.env.RESEND_FROM_EMAIL!;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!;
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!.replace(/\/+$/, "");
 
 function getClient() {
   if (!RESEND_KEY) return null;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Mail, Lock } from "lucide-react";
 import { loginAction, type AuthActionState } from "@/app/actions/auth";
 import { AuthMessage } from "@/components/auth/auth-message";
 import { Button } from "@/components/ui/button";
@@ -18,31 +18,50 @@ export function LoginForm({ nextPath = "" }: { nextPath?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
-    <form action={formAction} className="grid gap-4">
+    <form action={formAction} className="grid gap-5">
       <AuthMessage state={state} />
       {nextPath ? <input type="hidden" name="next" value={nextPath} /> : null}
-      <div className="grid gap-2">
+      <div className="grid gap-1.5">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
+        <div className="relative">
+          <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            className="pl-9"
+            required
+          />
+        </div>
       </div>
-      <div className="grid gap-2">
-        <div className="flex items-center justify-between gap-3">
+      <div className="grid gap-1.5">
+        <div className="flex items-center justify-between">
           <Label htmlFor="password">Password</Label>
-          <Link href="/forgot-password" className="text-xs text-primary hover:text-primary/80">
-            Forgot password
+          <Link
+            href="/forgot-password"
+            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+          >
+            Forgot?
           </Link>
         </div>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          minLength={8}
-          required
-        />
+        <div className="relative">
+          <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="Enter your password"
+            className="pl-9"
+            minLength={8}
+            required
+          />
+        </div>
       </div>
-      <Button type="submit" className="mt-2" disabled={pending}>
-        {pending ? <Loader2 className="animate-spin" /> : <ArrowRight />}
+      <Button type="submit" size="lg" className="w-full" disabled={pending}>
+        {pending ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
         Sign in
       </Button>
     </form>

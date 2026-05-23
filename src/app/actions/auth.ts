@@ -11,7 +11,7 @@ import {
 import { roleHome, roles, type UserRole } from "@/lib/constants";
 import { canAccessPath } from "@/lib/auth/routes";
 import { notifyNewUser } from "@/lib/notifications/telegram";
-import { sendWelcomeEmail } from "@/lib/notifications/email";
+import { sendConfirmationEmail, sendEmail } from "@/lib/notifications/email";
 
 export type AuthActionState = {
   ok: boolean;
@@ -19,13 +19,18 @@ export type AuthActionState = {
 };
 
 function getSiteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL!;
+  const url = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_SITE_URL is not set");
+  }
+  return url.replace(/\/+$/, "");
 }
 
 function envReady() {
   return Boolean(
+    process.env.NEXT_PUBLIC_SITE_URL &&
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 }
 
@@ -144,13 +149,16 @@ export async function registerAction(
   }
 
   const adminClient = createAdminClient();
-  const { data, error } = await adminClient.auth.admin.createUser({
+  const { data, error } = await adminClient.auth.admin.generateLink({
+    type: "signup",
     email: parsed.data.email,
     password: parsed.data.password,
-    email_confirm: true,
-    user_metadata: {
-      username: parsed.data.username,
-      role: parsed.data.role
+    options: {
+      data: {
+        username: parsed.data.username,
+        role: parsed.data.role
+      },
+      redirectTo: `${getSiteUrl()}/auth/callback`
     }
   });
 
@@ -161,15 +169,18 @@ export async function registerAction(
     };
   }
 
-  notifyNewUser(parsed.data.email);
-
-  if (data?.user) {
-    sendWelcomeEmail(parsed.data.email, parsed.data.username);
+  if (data?.properties?.action_link) {
+    notifyNewUser(parsed.data.email);
+    sendConfirmationEmail(parsed.data.email, data.properties.action_link);
+    return {
+      ok: true,
+      message: "Check your email to confirm your BabaStore account."
+    };
   }
 
   return {
-    ok: true,
-    message: "Account created! Welcome to BabaStore."
+    ok: false,
+    message: "Account created but confirmation link could not be generated."
   };
 }
 
@@ -196,9 +207,13 @@ export async function forgotPasswordAction(
     };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${getSiteUrl()}/reset-password`
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient.auth.admin.generateLink({
+    type: "recovery",
+    email: parsed.data.email,
+    options: {
+      redirectTo: `${getSiteUrl()}/reset-password`
+    }
   });
 
   if (error) {
@@ -208,9 +223,23 @@ export async function forgotPasswordAction(
     };
   }
 
+  if (data?.properties?.action_link) {
+    sendEmail({
+      to: parsed.data.email,
+      subject: "Reset your BabaStore password",
+      html: `
+        <h2 style="font-size:20px;font-weight:600;margin:0 0 8px">Reset your password</h2>
+        <p style="margin:0 0 16px;color:#4d4d4d">You requested a password reset for your BabaStore account. Click the button below to set a new password.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0"><tr><td align="center"><a href="${data.properties.action_link}" style="display:inline-block;padding:12px 32px;background:#171717;color:#ffffff;text-decoration:none;border-radius:100px;font-size:14px;font-weight:600">Reset password</a></td></tr></table>
+        <p style="margin:16px 0 0;color:#888;font-size:13px">If you didn't request this, you can ignore this email. The link expires in 1 hour.</p>
+        <p style="margin:4px 0 0;font-size:12px;word-break:break-all;color:#0070f3">${data.properties.action_link}</p>
+      `
+    });
+  }
+
   return {
     ok: true,
-    message: "Password reset email sent."
+    message: "If the email exists, a reset link has been sent."
   };
 }
 
