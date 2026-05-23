@@ -3,7 +3,7 @@
   <img src="https://pub-b9be931af9f8492ca6f5b94fc150a9c2.r2.dev/babastore-logo.png" alt="BabaStore" width="80" height="80" style="border-radius:16px"/>
   <h1 align="center">BabaStore</h1>
   <p align="center">
-    <strong>Open Android App Marketplace</strong>
+    <strong>Open Android App Marketplace.</strong>
     <br/>
     Browse, install, review, and publish Android APKs — free and open.
   </p>
