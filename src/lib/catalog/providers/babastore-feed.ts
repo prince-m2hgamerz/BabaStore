@@ -186,8 +186,8 @@ function categoryFromApp(app: FeedApp) {
   return "Apps";
 }
 
-function appAccent(seed: string) {
-  const accents = [
+function appAccent(seed: string): string {
+  const accents: readonly string[] = [
     "linear-gradient(135deg, #007cf0, #00dfd8)",
     "linear-gradient(135deg, #111827, #4f46e5)",
     "linear-gradient(135deg, #16a34a, #84cc16)",
@@ -197,7 +197,7 @@ function appAccent(seed: string) {
     .split("")
     .reduce((sum, char) => sum + char.charCodeAt(0), 0) % accents.length;
 
-  return accents[index];
+  return accents[index]!;
 }
 
 function lineItems(value: string | null | undefined) {
@@ -600,15 +600,17 @@ export const babaStoreFeedProvider: CatalogProvider = {
 
     if (!META_BASE) return null;
 
-    return cached(`babastore:asset:${asset}:${lookupCacheKey(lookup)}`, CACHE_TTL, async () => {
-      const [assetName, indexValue] = asset.split(":");
-      const index = Number(indexValue ?? "0") || 0;
-      const payload = await feedFetch<FeedMetaResponse>(
-        endpoint(META_BASE, lookupPath(lookup))
-      );
+      return cached(`babastore:asset:${asset}:${lookupCacheKey(lookup)}`, CACHE_TTL, async () => {
+        const parts = asset.split(":");
+        const assetName = parts[0] ?? "icon";
+        const indexValue = parts[1];
+        const index = Number(indexValue ?? "0") || 0;
+        const payload = await feedFetch<FeedMetaResponse>(
+          endpoint(META_BASE, lookupPath(lookup))
+        );
 
-      return payload.data ? privateAssetUrl(payload.data, assetName, index) : null;
-    });
+        return payload.data ? privateAssetUrl(payload.data, assetName, index) : null;
+      });
   },
 
   async getVersions(packageName: string) {

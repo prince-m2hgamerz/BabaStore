@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { appMetadataSchema } from "@/lib/validators/developer";
+import { notifyNewApp } from "@/lib/notifications/telegram";
 
 export async function POST(request: NextRequest) {
   const { profile, missingEnv } = await getCurrentProfile();
@@ -119,5 +120,7 @@ export async function POST(request: NextRequest) {
   }
 
   revalidateTag("catalog");
+  notifyNewApp(input.name, profile.email ?? "Unknown");
+
   return NextResponse.json({ id: app.id });
 }

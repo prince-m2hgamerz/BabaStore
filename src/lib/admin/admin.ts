@@ -299,6 +299,250 @@ export async function deleteAnnouncement(announcementId: string) {
   if (error) throw new Error(error.message);
 }
 
+export type ReviewAdminItem = {
+  id: string;
+  appId: string;
+  appName: string;
+  appPackageName: string;
+  userName: string;
+  userEmail: string;
+  userId: string;
+  rating: number;
+  body: string | null;
+  developerResponse: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DownloadAnalytics = {
+  totalDownloads: number;
+  uniqueDownloads: number;
+  todayDownloads: number;
+  weekDownloads: number;
+  dailyData: Array<{ date: string; downloads: number }>;
+  topApps: Array<{
+    appId: string;
+    appName: string;
+    packageName: string;
+    downloads: number;
+  }>;
+};
+
+type ReviewRecord = Database["public"]["Tables"]["reviews"]["Row"] & {
+  apps: { name: string; package_name: string } | { name: string; package_name: string }[] | null;
+  profiles: { username: string | null; email: string } | { username: string | null; email: string }[] | null;
+};
+
+export async function getReviewList(options?: {
+  limit?: number;
+  offset?: number;
+  minRating?: number;
+  search?: string;
+}): Promise<{ reviews: ReviewAdminItem[]; total: number }> {
+  try {
+    const supabase = await createClient();
+    const limit = options?.limit ?? 50;
+    const offset = options?.offset ?? 0;
+
+    let query = supabase
+      .from("reviews")
+      .select("*, apps(name,package_name), profiles(username,email)", { count: "exact" });
+
+    if (options?.minRating) {
+      query = query.gte("rating", options.minRating);
+    }
+
+    if (options?.search) {
+      query = query.or(
+        `apps.name.ilike.%${options.search}%,apps.package_name.ilike.%${options.search}%,profiles.username.ilike.%${options.search}%`
+      );
+    }
+
+    const { data, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error || !data) return { reviews: [], total: 0 };
+
+    const items: ReviewAdminItem[] = (data as ReviewRecord[]).map((item) => {
+      const app = Array.isArray(item.apps) ? item.apps[0] : item.apps;
+      const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
+      return {
+        id: item.id,
+        appId: item.app_id,
+        appName: app?.name ?? "Unknown",
+        appPackageName: app?.package_name ?? "",
+        userName: profile?.username ?? profile?.email ?? "Unknown",
+        userEmail: profile?.email ?? "",
+        userId: item.user_id,
+        rating: item.rating,
+        body: item.body,
+        developerResponse: item.developer_response,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at
+      };
+    });
+
+    return { reviews: items, total: count ?? data.length };
+  } catch {
+    return { reviews: [], total: 0 };
+  }
+}
+
+export async function getDownloadAnalytics(): Promise<DownloadAnalytics> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("downloads")
+      .select("app_id, user_id, created_at");
+
+    if (error || !data) {
+      return {
+        totalDownloads: 0,
+        uniqueDownloads: 0,
+        todayDownloads: 0,
+        weekDownloads: 0,
+        dailyData: [],
+        topApps: []
+      };
+    }
+
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - 7);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const todayDownloads = data.filter((d) => new Date(d.created_at) >= todayStart).length;
+    const weekDownloads = data.filter((d) => new Date(d.created_at) >= weekStart).length;
+    const uniqueByUser = new Set(data.filter((d) => d.user_id).map((d) => d.user_id)).size;
+
+    const dailyMap = new Map<string, number>();
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const key = date.toLocaleDateString("en", { month: "short", day: "numeric" });
+      dailyMap.set(key, 0);
+    }
+    data.forEach((d) => {
+      const key = new Date(d.created_at).toLocaleDateString("en", { month: "short", day: "numeric" });
+      if (dailyMap.has(key)) {
+        dailyMap.set(key, (dailyMap.get(key) ?? 0) + 1);
+      }
+    });
+
+    const appDownloads = new Map<string, number>();
+    data.forEach((d) => {
+      appDownloads.set(d.app_id, (appDownloads.get(d.app_id) ?? 0) + 1);
+    });
+
+    const topAppIds = [...appDownloads.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([id]) => id);
+
+    const { data: apps } = await supabase
+      .from("apps")
+      .select("id, name, package_name")
+      .in("id", topAppIds);
+
+    const appMap = new Map((apps ?? []).map((a) => [a.id, a]));
+
+    const topApps = topAppIds.map((id) => ({
+      appId: id,
+      appName: appMap.get(id)?.name ?? "Unknown",
+      packageName: appMap.get(id)?.package_name ?? "",
+      downloads: appDownloads.get(id) ?? 0
+    }));
+
+    return {
+      totalDownloads: data.length,
+      uniqueDownloads: uniqueByUser,
+      todayDownloads,
+      weekDownloads,
+      dailyData: [...dailyMap.entries()].map(([date, downloads]) => ({ date, downloads })),
+      topApps
+    };
+  } catch {
+    return {
+      totalDownloads: 0,
+      uniqueDownloads: 0,
+      todayDownloads: 0,
+      weekDownloads: 0,
+      dailyData: [],
+      topApps: []
+    };
+  }
+}
+
+export async function getAdminAppById(appId: string) {
+  try {
+    const supabase = await createClient();
+    const { data: app, error } = await supabase
+      .from("apps")
+      .select("*, profiles(email,username), categories(name,slug)")
+      .eq("id", appId)
+      .single();
+
+    if (error || !app) return null;
+
+    const [versions, scans, reviews, downloads] = await Promise.all([
+      supabase
+        .from("app_versions")
+        .select("*")
+        .eq("app_id", appId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("upload_scans")
+        .select("*")
+        .eq("package_name", ((app as { package_name: string }).package_name))
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("reviews")
+        .select("*, profiles(username,email)")
+        .eq("app_id", appId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("downloads")
+        .select("id, created_at")
+        .eq("app_id", appId)
+    ]);
+
+    return {
+      ...app,
+      developer: Array.isArray(app.profiles) ? app.profiles[0] : app.profiles,
+      category: Array.isArray(app.categories) ? app.categories[0] : app.categories,
+      versions: versions.data ?? [],
+      scans: scans.data ?? [],
+      reviews: reviews.data ?? [],
+      totalDownloads: downloads.data?.length ?? 0
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function respondToReview(reviewId: string, response: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("reviews")
+    .update({ developer_response: response, updated_at: new Date().toISOString() })
+    .eq("id", reviewId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteReview(reviewId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("reviews")
+    .delete()
+    .eq("id", reviewId);
+
+  if (error) throw new Error(error.message);
+}
+
 export async function getUploadScans(limit = 100): Promise<UploadScan[]> {
   try {
     const supabase = (await createClient()) as unknown as {

@@ -1,3 +1,7 @@
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 export function AppIcon({
@@ -15,7 +19,9 @@ export function AppIcon({
   className?: string;
   lazy?: boolean;
 }) {
-  const resolvedSrc = src?.trim() || fallbackSrc?.trim() || null;
+  const [errored, setErrored] = useState(false);
+  const resolvedSrc =
+    !errored && (src?.trim() || fallbackSrc?.trim()) || null;
   return (
     <div
       className={cn(
@@ -25,13 +31,14 @@ export function AppIcon({
       style={{ background: accent }}
     >
       {resolvedSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={resolvedSrc}
           alt={`${name} icon`}
+          fill
+          sizes="96px"
           loading={lazy ? "lazy" : "eager"}
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="object-cover"
+          onError={() => setErrored(true)}
         />
       ) : null}
       <span className={cn("font-semibold", resolvedSrc ? "sr-only" : "")}>

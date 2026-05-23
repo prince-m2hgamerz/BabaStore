@@ -26,10 +26,21 @@ export type SavedApp = {
   app: CatalogApp;
 };
 
+export type UserReviewItem = {
+  id: string;
+  appId: string;
+  appName: string;
+  appSlug: string;
+  rating: number;
+  body: string | null;
+  createdAt: string;
+};
+
 export type UserLibrary = {
   downloads: DownloadedApp[];
   uniqueDownloads: DownloadedApp[];
   wishlist: SavedApp[];
+  reviews: UserReviewItem[];
   recommendedApps: CatalogApp[];
   totalDownloads: number;
   totalWishlist: number;
@@ -90,11 +101,30 @@ export async function isAppWishlisted(userId: string, appId: string) {
 }
 
 export async function getUserLibrary(userId: string): Promise<UserLibrary> {
+  const supabase = await createClient();
   const [apps, downloads, wishlist] = await Promise.all([
     getCatalogApps({ limit: 500 }),
     getDownloadRows(userId),
     getWishlistRows(userId)
   ]);
+  let reviewRows: {
+    id: string;
+    app_id: string;
+    rating: number;
+    body: string | null;
+    created_at: string;
+  }[] | null = null;
+  try {
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, app_id, rating, body, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    reviewRows = data;
+  } catch {
+    reviewRows = null;
+  }
   const appsById = new Map(apps.map((app) => [app.id, app]));
 
   const downloadItems = downloads
@@ -137,6 +167,23 @@ export async function getUserLibrary(userId: string): Promise<UserLibrary> {
     })
     .filter((item): item is SavedApp => Boolean(item));
 
+  const reviewItems: UserReviewItem[] = (reviewRows ?? [])
+    .map((review) => {
+      const app = appsById.get(review.app_id);
+      return app
+        ? {
+            id: review.id,
+            appId: review.app_id,
+            appName: app.name,
+            appSlug: app.slug,
+            rating: review.rating,
+            body: review.body,
+            createdAt: review.created_at
+          }
+        : null;
+    })
+    .filter((item): item is UserReviewItem => Boolean(item));
+
   const blockedIds = new Set([
     ...uniqueDownloads.map((item) => item.app.id),
     ...savedItems.map((item) => item.app.id)
@@ -147,6 +194,7 @@ export async function getUserLibrary(userId: string): Promise<UserLibrary> {
     downloads: downloadItems,
     uniqueDownloads,
     wishlist: savedItems,
+    reviews: reviewItems,
     recommendedApps,
     totalDownloads: downloads.length,
     totalWishlist: wishlist.length

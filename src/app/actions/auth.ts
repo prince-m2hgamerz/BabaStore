@@ -9,6 +9,8 @@ import {
 } from "@/lib/validators/auth";
 import { roleHome, roles, type UserRole } from "@/lib/constants";
 import { canAccessPath } from "@/lib/auth/routes";
+import { notifyNewUser } from "@/lib/notifications/telegram";
+import { sendWelcomeEmail } from "@/lib/notifications/email";
 
 export type AuthActionState = {
   ok: boolean;
@@ -159,6 +161,9 @@ export async function registerAction(
       message: error.message
     };
   }
+
+  notifyNewUser(parsed.data.email);
+  sendWelcomeEmail(parsed.data.email);
 
   return {
     ok: true,

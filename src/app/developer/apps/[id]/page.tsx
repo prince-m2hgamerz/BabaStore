@@ -24,6 +24,22 @@ import { Separator } from "@/components/ui/separator";
 import { requireRole } from "@/lib/auth/guards";
 import { appMetrics, formatBytes, formatDate, formatDownloads } from "@/lib/catalog/catalog";
 import { getDeveloperApp, getDeveloperOverview } from "@/lib/developer/developer";
+import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/types";
+import { ScanResultCard } from "@/components/developer/scan-result";
+
+type UploadScan = Database["public"]["Tables"]["upload_scans"]["Row"];
+
+async function getAppScans(packageName: string): Promise<UploadScan[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("upload_scans")
+    .select("*")
+    .eq("package_name", packageName)
+    .eq("folder", "apks")
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
 
 export const metadata = {
   title: "Manage App"
@@ -38,6 +54,7 @@ export default async function DeveloperAppPage({
   const { missingEnv, profile } = await requireRole(["developer", "admin"]);
   const app = profile ? await getDeveloperApp(profile.id, id, profile.role) : null;
   const overview = profile ? await getDeveloperOverview(profile.id, profile.role) : null;
+  const appScans = app ? await getAppScans(app.packageName) : [];
 
   if (!app) {
     notFound();
@@ -189,6 +206,16 @@ export default async function DeveloperAppPage({
                             </p>
                           </>
                         ) : null}
+                        {(() => {
+                          const versionScan = appScans.find(
+                            (s) => s.file_name?.includes(version.version_name) || s.file_name === `${app!.packageName}.apk`
+                          );
+                          return versionScan ? (
+                            <div className="mt-3">
+                              <ScanResultCard scan={versionScan} />
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                     ))}
                   </div>

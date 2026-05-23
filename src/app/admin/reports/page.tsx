@@ -1,3 +1,4 @@
+import React from "react";
 import { AlertTriangle, Database, Download, FileWarning, ShieldCheck } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { EnvWarning } from "@/components/dashboard/env-warning";
@@ -121,15 +122,20 @@ export default async function AdminReportsPage() {
                 ["Review queue", formatDownloads(overview.stats.reviewQueue), AlertTriangle],
                 ["Flagged apps", formatDownloads(overview.stats.flaggedApps), FileWarning],
                 ["Rejected apps", formatDownloads(overview.stats.rejectedApps), FileWarning]
-              ].map(([label, value, Icon]) => (
-                <div key={label as string} className="flex items-center justify-between gap-4 rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                  <span className="flex items-center gap-2 text-neutral-500">
-                    <Icon className="size-4" />
-                    {label as string}
-                  </span>
-                  <strong>{value as string}</strong>
-                </div>
-              ))}
+              ].map((entry) => {
+                const label = entry[0] as string;
+                const value = entry[1] as string;
+                const Icon = entry[2] as React.ElementType;
+                return (
+                  <div key={label} className="flex items-center justify-between gap-4 rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                    <span className="flex items-center gap-2 text-neutral-500">
+                      <Icon className="size-4" />
+                      {label}
+                    </span>
+                    <strong>{value}</strong>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>

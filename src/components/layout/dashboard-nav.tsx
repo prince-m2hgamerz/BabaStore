@@ -47,10 +47,12 @@ export const navBySection = {
   admin: [
     { href: "/admin", label: "Moderation", icon: ShieldCheck },
     { href: "/admin/apps", label: "Apps", icon: Boxes },
+    { href: "/admin/downloads", label: "Downloads", icon: Download },
+    { href: "/admin/reviews", label: "Reviews", icon: MessageSquareText },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/categories", label: "Categories", icon: Tags },
     { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
-    { href: "/admin/feedback", label: "Feedback", icon: MessageSquareText },
+    { href: "/admin/feedback", label: "Feedback", icon: BarChart3 },
     { href: "/admin/reports", label: "Reports", icon: Flag }
   ]
 } as const;

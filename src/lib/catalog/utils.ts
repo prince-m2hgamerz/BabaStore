@@ -6,8 +6,8 @@ export function normalizeSlug(value: string) {
     .replace(/^-|-$/g, "");
 }
 
-export function appAccent(seed: string) {
-  const accents = [
+export function appAccent(seed: string): string {
+  const accents: readonly string[] = [
     "linear-gradient(135deg, #007cf0, #00dfd8)",
     "linear-gradient(135deg, #7928ca, #ff0080)",
     "linear-gradient(135deg, #ff4d4d, #f9cb28)",
@@ -17,7 +17,7 @@ export function appAccent(seed: string) {
     .split("")
     .reduce((sum, char) => sum + char.charCodeAt(0), 0) % accents.length;
 
-  return accents[index];
+  return accents[index]!;
 }
 
 export function lineItems(value: string | null | undefined) {
