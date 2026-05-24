@@ -2,3 +2,11 @@
 enabled = true
 verify_jwt = false
 import_map = "./import_map.json"
+
+[functions.telegram-bot]
+enabled = true
+verify_jwt = false
+
+[functions.insta]
+enabled = true
+verify_jwt = false
