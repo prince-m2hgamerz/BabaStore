@@ -220,11 +220,22 @@ export async function checkNewMessagesAndReply(): Promise<{
   if (!row?.session_string) return { checked: 0, replied: 0, error: "Not authenticated." };
   if (!row.auto_reply_enabled) return { checked: 0, replied: 0, error: "Auto-reply disabled." };
 
-  // Load active automation rules
+  // Load active automation rules; fall back to default catch-all rule
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rulesTb = createAdminClient().from("telegram_automations") as any;
-  const { data: rules } = await rulesTb.select("*").eq("is_active", true);
-  if (!rules?.length) return { checked: 0, replied: 0, error: "No active rules." };
+  let { data: rules } = await rulesTb.select("*").eq("is_active", true);
+  if (!rules?.length) {
+    rules = [{
+      id: "default",
+      name: "Default catch-all",
+      trigger_type: "all",
+      trigger_pattern: null,
+      reply_style: "friendly",
+      max_tokens: 80,
+      temperature: 0.7,
+      allowed_chat_ids: []
+    }];
+  }
 
   try {
     const client = new TelegramClient(new StringSession(row.session_string), creds.apiId, creds.apiHash, {
@@ -242,8 +253,8 @@ export async function checkNewMessagesAndReply(): Promise<{
 
     for (const dialog of dialogs) {
       try {
-        // GramJS v2 Dialog has .isUser boolean from constructor
-        if (!dialog.isUser) { skipped.notUser++; continue; }
+        // Only skip if explicitly a group/channel; user dialogs pass through
+        if (dialog.isUser === false) { skipped.notUser++; continue; }
         if (!dialog.id) { skipped.noId++; continue; }
 
         const chatId = String(dialog.id);

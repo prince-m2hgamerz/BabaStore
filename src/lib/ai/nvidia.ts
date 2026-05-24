@@ -66,6 +66,52 @@ export async function getNvidiaAssistantResponse(
   });
 }
 
+function generateFallbackReply(
+  incoming: string,
+  style: "concise" | "detailed" | "friendly" | "professional"
+): string {
+  const lower = incoming.toLowerCase();
+  const hi = ["hi", "hello", "hey", "sup", "yo", "what's up"];
+  const bye = ["bye", "goodbye", "see you", "cya", "later"];
+  const how = ["how are you", "how's it", "how do you", "what's up"];
+  const thx = ["thanks", "thank you", "ty", "thx", "appreciate"];
+  const ok = ["ok", "okay", "k", "kk", "sure", "alright"];
+  const help = ["help", "what can you", "what do you"];
+
+  if (hi.some(w => lower.includes(w))) {
+    if (style === "professional") return "Hello! How can I help you today?";
+    if (style === "concise") return "Hey! What's up?";
+    return "Hey there! How's it going?";
+  }
+  if (bye.some(w => lower.includes(w))) {
+    if (style === "professional") return "Goodbye! Have a great day.";
+    return "See ya! Take care.";
+  }
+  if (how.some(w => lower.includes(w))) {
+    if (style === "concise") return "Doing great, thanks! You?";
+    return "I'm doing great, thanks for asking! How about you?";
+  }
+  if (thx.some(w => lower.includes(w))) {
+    if (style === "professional") return "You're welcome! Happy to help.";
+    return "No problem! Anytime.";
+  }
+  if (ok.some(w => lower.includes(w))) {
+    return "Cool, let me know if you need anything!";
+  }
+  if (help.some(w => lower.includes(w))) {
+    return "I'm here to chat! What's on your mind?";
+  }
+
+  const fallbacks: Record<string, string[]> = {
+    concise: ["Got it.", "Sure.", "Interesting!", "I see.", "Cool!"],
+    detailed: ["That's interesting! Tell me more about it.", "I see what you mean. What do you think?", "Got it, thanks for sharing!"],
+    friendly: ["That's awesome! Tell me more!", "Oh nice! How's that going?", "Haha, gotcha!", "Sounds good!"],
+    professional: ["Thank you for sharing. I appreciate your input.", "Noted. Is there anything else I can help with?", "I understand. Let me know if you need further assistance."]
+  };
+  const list = (fallbacks[style] ?? fallbacks.friendly) as string[];
+  return list[Math.floor(Math.random() * list.length)] ?? "Got it!";
+}
+
 export async function generateTelegramReply(params: {
   message: string;
   senderName?: string;
@@ -103,7 +149,7 @@ export async function generateTelegramReply(params: {
     ? contextBlock + params.message
     : params.message;
 
-  return nvidiaChatCompletion({
+  const aiReply = await nvidiaChatCompletion({
     model: "meta/llama-3.1-8b-instruct",
     messages: [
       { role: "system", content: systemPrompt },
@@ -112,4 +158,8 @@ export async function generateTelegramReply(params: {
     temperature: params.temperature,
     max_tokens: Math.min(params.maxTokens, 80)
   });
+
+  if (aiReply) return aiReply;
+
+  return generateFallbackReply(params.message, params.replyStyle);
 }

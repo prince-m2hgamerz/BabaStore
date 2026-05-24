@@ -24,6 +24,7 @@ import { AppIcon } from "@/components/catalog/app-icon";
 import { StoreFilters } from "@/components/catalog/store-filters";
 import { TopNav } from "@/components/layout/top-nav";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { FeaturedCarousel } from "@/components/marketing/featured-carousel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -84,8 +85,9 @@ export default async function HomePage({
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 8);
   const editorsPick = apps.filter((a) => a.rating && a.rating >= 4).slice(0, 10);
-  const featuredApp = publishedLocalApps[0] ?? apps[0];
-  const featuredMetrics = featuredApp ? appMetrics(featuredApp) : null;
+  const featuredApps = publishedLocalApps.length
+    ? publishedLocalApps
+    : apps.slice(0, Math.min(5, apps.length));
 
   return (
     <div className="min-h-screen bg-white">
@@ -96,66 +98,8 @@ export default async function HomePage({
           <div className="absolute -right-32 -top-32 size-96 rounded-full bg-gradient-to-br from-[#f0f7ff] to-transparent blur-3xl" />
           <div className="absolute -bottom-32 -left-32 size-96 rounded-full bg-gradient-to-tr from-[#faf0ff] to-transparent blur-3xl" />
           <div className="page-shell relative pb-4 pt-3 sm:pb-8 sm:pt-6">
-            {featuredApp && featuredMetrics ? (
-              <Link
-                href={`/apps/${featuredApp.slug}`}
-                className="group relative block overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-level-3 transition hover:shadow-level-4 active:scale-[0.99]"
-              >
-                <div className="flex flex-col sm:flex-row">
-                  <div
-                    className="relative flex min-h-[180px] w-full items-end p-5 sm:min-h-[260px] sm:w-80 sm:p-8"
-                    style={{ background: featuredApp.accent }}
-                  >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.35),transparent_50%)]" />
-                    <div className="relative flex items-end gap-4 sm:gap-5">
-                      <AppIcon
-                        name={featuredApp.name}
-                        accent={featuredApp.accent}
-                        src={featuredApp.iconUrl}
-                        className="size-16 border-2 border-white/30 shadow-lg sm:size-24"
-                      />
-                      <div className="text-white">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70 sm:text-[11px]">
-                          Featured App
-                        </p>
-                        <h2 className="text-xl font-bold leading-tight sm:text-3xl">
-                          {featuredApp.name}
-                        </h2>
-                        <p className="mt-0.5 text-sm text-white/75 sm:text-base">
-                          {featuredApp.developer}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-1 flex-col justify-center gap-2 p-5 sm:gap-3 sm:p-8">
-                    <p className="line-clamp-2 text-sm leading-relaxed text-neutral-600 sm:text-[15px]">
-                      {featuredApp.summary ?? featuredApp.description}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500">
-                      <span className="flex items-center gap-1">
-                        <Star className="size-4 fill-amber-400 text-amber-400" />
-                        <span className="font-medium text-neutral-800">{featuredMetrics.rating}</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Download className="size-4" />
-                        {featuredMetrics.downloads}
-                      </span>
-                      <span className="hidden text-neutral-300 sm:inline">|</span>
-                      <span className="hidden sm:inline">{featuredMetrics.size}</span>
-                      <span className="ml-auto hidden text-xs text-neutral-400 sm:inline">{featuredApp.category}</span>
-                    </div>
-                    <div className="mt-1 flex items-center gap-4 sm:mt-2">
-                      <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#01875f] px-5 text-sm font-medium text-white transition group-hover:bg-[#016b4a]">
-                        <Download className="size-4" />
-                        Install
-                      </span>
-                      <span className="text-sm font-medium text-blue-600 transition group-hover:underline">
-                        More info &rarr;
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
+            {featuredApps.length ? (
+              <FeaturedCarousel apps={featuredApps} />
             ) : (
               <div className="flex flex-col items-center gap-3 py-8 text-center sm:gap-4 sm:py-16">
                 <Badge variant="secondary" className="w-fit font-mono text-[11px] tracking-wider">
@@ -186,16 +130,20 @@ export default async function HomePage({
 
         {/* Category pills */}
         <section className="page-shell pt-3 sm:pt-5">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {categories.map((cat) => (
-              <Link
-                key={cat.slug}
-                href={`/?category=${cat.slug}`}
-                className="shrink-0 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-1.5 text-sm font-medium text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 active:scale-95"
-              >
-                {cat.name}
-              </Link>
-            ))}
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white to-transparent sm:hidden" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white to-transparent sm:hidden" />
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {categories.map((cat) => (
+                <Link
+                  key={cat.slug}
+                  href={`/?category=${cat.slug}`}
+                  className="shrink-0 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-1.5 text-sm font-medium text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 active:scale-95"
+                >
+                  {cat.name}
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -206,21 +154,23 @@ export default async function HomePage({
               <h2 className="text-base font-bold text-neutral-950 sm:text-xl">
                 Top Charts
               </h2>
-              <Button variant="ghost" size="sm" asChild className="text-xs sm:text-sm">
-                <Link href="/?tab=top-charts&sort=downloads#catalog">
-                  More <ChevronRight className="size-4" />
-                </Link>
-              </Button>
+              <Link href="/?tab=top-charts&sort=downloads#catalog" className="group text-xs sm:text-sm font-medium text-neutral-600 transition hover:text-neutral-950">
+                More <ChevronRight className="ml-0.5 inline size-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
             </div>
             <div className="divide-y divide-neutral-100 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-level-2">
-              {topChartApps.slice(0, 10).map((app, index) => (
+              {topChartApps.slice(0, 10).map((app, index) => {
+                const medal = index === 0 ? "\u{1F947}" : index === 1 ? "\u{1F948}" : index === 2 ? "\u{1F949}" : null;
+                return (
                 <Link
                   key={app.id}
                   href={`/apps/${app.slug}`}
                   className="flex items-center gap-3 px-3 py-2.5 transition hover:bg-neutral-50 active:scale-[0.99] sm:gap-4 sm:px-4 sm:py-3"
                 >
-                  <span className="flex w-5 shrink-0 items-center justify-center text-sm font-bold text-neutral-400 sm:w-6 sm:text-base">
-                    {index + 1}
+                  <span className="flex w-6 shrink-0 items-center justify-center text-sm font-bold text-neutral-400 sm:w-7 sm:text-base">
+                    {medal ?? (
+                      <span className="text-neutral-300">{index + 1}</span>
+                    )}
                   </span>
                   <AppIcon
                     name={app.name}
@@ -246,13 +196,13 @@ export default async function HomePage({
                       {appMetrics(app).downloads}
                     </span>
                   </div>
-                  <span className="inline-flex h-7 items-center rounded-full bg-[#01875f]/10 px-3 text-xs font-medium text-[#01875f] sm:hidden">
+                  <span className="inline-flex h-7 items-center rounded-full bg-[#28feaf]/15 px-3 text-xs font-medium text-[#1dbf8d] sm:hidden">
                     <Download className="mr-1 size-3" />
                     Install
                   </span>
                   <ChevronRight className="hidden size-5 shrink-0 text-neutral-300 sm:block" />
                 </Link>
-              ))}
+              );})}
             </div>
           </section>
         ) : null}
@@ -264,11 +214,9 @@ export default async function HomePage({
               <h2 className="text-base font-bold text-neutral-950 sm:text-xl">
                 Editor&apos;s Choice
               </h2>
-              <Button variant="ghost" size="sm" asChild className="text-xs sm:text-sm">
-                <Link href="/?tab=for-you&sort=rating#catalog">
-                  More <ChevronRight className="size-4" />
-                </Link>
-              </Button>
+              <Link href="/?tab=for-you&sort=rating#catalog" className="group text-xs sm:text-sm font-medium text-neutral-600 transition hover:text-neutral-950">
+                More <ChevronRight className="ml-0.5 inline size-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
               {editorsPick.slice(0, 8).map((app) => (
@@ -287,11 +235,9 @@ export default async function HomePage({
               <h2 className="text-base font-bold text-neutral-950 sm:text-xl">
                 New Releases
               </h2>
-              <Button variant="ghost" size="sm" asChild className="text-xs sm:text-sm">
-                <Link href="/?tab=new-releases&sort=newest#catalog">
-                  More <ChevronRight className="size-4" />
-                </Link>
-              </Button>
+              <Link href="/?tab=new-releases&sort=newest#catalog" className="group text-xs sm:text-sm font-medium text-neutral-600 transition hover:text-neutral-950">
+                More <ChevronRight className="ml-0.5 inline size-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
               {newReleaseApps.map((app) => (

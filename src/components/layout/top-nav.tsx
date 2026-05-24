@@ -26,7 +26,7 @@ export async function TopNav({ searchQuery = "" }: { searchQuery?: string }) {
     : null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/85 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/85 backdrop-blur-xl shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       <div className="page-shell grid gap-2 py-2 sm:gap-3 sm:py-3">
         <div className="flex min-h-11 min-w-0 items-center gap-2 sm:gap-3">
           <Logo />

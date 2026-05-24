@@ -129,8 +129,15 @@ export function PersonalAccountForm({ initial }: { initial: Status }) {
         setError(data.error);
         return;
       }
-      const skipped = data.skipped ? ` [${Object.entries(data.skipped).filter(([, v]) => (v as number) > 0).map(([k, v]) => `${k}:${v}`).join(", ")}]` : "";
-      setMessage(`Checked ${data.checked} conversations, replied to ${data.replied}.${skipped}`);
+      const parts = [`Checked ${data.checked} dialogs`, `replied ${data.replied}`];
+      if (data.elapsed) parts.push(`in ${data.elapsed}ms`);
+      if (data.skipped) {
+        const skippedEntries = Object.entries(data.skipped).filter(([, v]) => (v as number) > 0);
+        if (skippedEntries.length) {
+          parts.push(`skipped: ${skippedEntries.map(([k, v]) => `${k}=${v}`).join(", ")}`);
+        }
+      }
+      setMessage(parts.join(", "));
     } catch {
       setError("Failed to check messages.");
     }

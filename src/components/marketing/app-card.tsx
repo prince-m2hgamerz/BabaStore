@@ -17,11 +17,11 @@ export function AppCard({ app, compact = false }: { app: CatalogApp; compact?: b
   return (
     <Link
       href={`/apps/${app.slug}`}
-      className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-[#0070f3]/40 rounded-md"
+      className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-[#28feaf]/40 rounded-md group"
     >
-      <div className="relative h-full rounded-md bg-white transition-all duration-150 hover:shadow-[0px_2px_2px_rgba(0,0,0,0.04),0px_8px_8px_-8px_rgba(0,0,0,0.04),inset_0_0_0_1px_rgba(0,0,0,0.08)] active:scale-[0.98] shadow-[0px_1px_1px_rgba(0,0,0,0.03),0px_2px_2px_rgba(0,0,0,0.04),inset_0_0_0_1px_rgba(0,0,0,0.08)]">
+      <div className="relative h-full rounded-md bg-white transition-all duration-200 hover:shadow-[0px_2px_2px_rgba(0,0,0,0.04),0px_8px_16px_-4px_rgba(0,0,0,0.06),inset_0_0_0_1px_rgba(0,0,0,0.08)] active:scale-[0.97] shadow-[0px_1px_1px_rgba(0,0,0,0.03),0px_2px_2px_rgba(0,0,0,0.04),inset_0_0_0_1px_rgba(0,0,0,0.08)]">
         <div
-          className="absolute left-0 top-2 h-[calc(100%-16px)] w-[3px] rounded-r-sm opacity-60"
+          className="absolute left-0 top-2 h-[calc(100%-16px)] w-[3px] rounded-r-sm opacity-60 transition-opacity group-hover:opacity-100"
           style={{ background: accentColor }}
         />
         <div className="flex items-start gap-3 p-3 sm:gap-4 sm:p-4">
