@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/guards";
+import { TelegramAutoReplyProvider } from "@/components/layout/telegram-auto-reply-provider";
 
 export default async function AdminLayout({
   children
@@ -8,7 +9,7 @@ export default async function AdminLayout({
 }) {
   const result = await getCurrentProfile();
   if (result.missingEnv) {
-    return <>{children}</>;
+    return <TelegramAutoReplyProvider>{children}</TelegramAutoReplyProvider>;
   }
   if (!result.user || !result.profile) {
     redirect("/login");
@@ -19,5 +20,5 @@ export default async function AdminLayout({
     redirect(home);
   }
 
-  return <>{children}</>;
+  return <TelegramAutoReplyProvider>{children}</TelegramAutoReplyProvider>;
 }

@@ -10,12 +10,13 @@ import {
   Shield,
   XCircle,
   User,
-  Play
+  Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useAutoReplyPolling } from "@/lib/telegram/use-auto-reply-polling";
 
 interface Status {
   connected: boolean;
@@ -35,7 +36,18 @@ export function PersonalAccountForm({ initial }: { initial: Status }) {
   );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(
+    initial.connected && initial.autoReplyEnabled
+      ? "Auto-reply is running 24/7. No need to click anything."
+      : ""
+  );
+
+  // Auto-polling: runs 24/7 while connected
+  const pollStatus = useAutoReplyPolling(
+    status.connected,
+    status.autoReplyEnabled,
+    30000
+  );
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -97,7 +109,7 @@ export function PersonalAccountForm({ initial }: { initial: Status }) {
       } else {
         setStatus({ ...status, connected: true, pendingAuth: false });
         setStep("idle");
-        setMessage("Connected! Your Telegram account is now active.");
+        setMessage("Connected! Auto-reply is now running 24/7.");
       }
     } catch {
       setError("Failed to verify code.");
@@ -118,32 +130,6 @@ export function PersonalAccountForm({ initial }: { initial: Status }) {
     setLoading(false);
   }
 
-  async function checkMessages() {
-    setLoading(true);
-    setError("");
-    setMessage("");
-    try {
-      const res = await fetch("/api/telegram/user/check-messages", { method: "POST" });
-      const data = await res.json();
-      if (data.error) {
-        setError(data.error);
-        return;
-      }
-      const parts = [`Checked ${data.checked} dialogs`, `replied ${data.replied}`];
-      if (data.elapsed) parts.push(`in ${data.elapsed}ms`);
-      if (data.skipped) {
-        const skippedEntries = Object.entries(data.skipped).filter(([, v]) => (v as number) > 0);
-        if (skippedEntries.length) {
-          parts.push(`skipped: ${skippedEntries.map(([k, v]) => `${k}=${v}`).join(", ")}`);
-        }
-      }
-      setMessage(parts.join(", "));
-    } catch {
-      setError("Failed to check messages.");
-    }
-    setLoading(false);
-  }
-
   return (
     <div className="grid gap-4">
       {message ? (
@@ -151,7 +137,7 @@ export function PersonalAccountForm({ initial }: { initial: Status }) {
           "flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm",
           error ? "border-red-200 bg-red-50 text-red-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"
         )}>
-          {message.includes("Connected") || message.includes("replied") ? (
+          {message.includes("Connected") || message.includes("running") || message.includes("replied") ? (
             <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
           ) : (
             <XCircle className="mt-0.5 size-4 shrink-0" />
@@ -183,10 +169,37 @@ export function PersonalAccountForm({ initial }: { initial: Status }) {
             </Button>
           </div>
 
-          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={checkMessages} disabled={loading}>
-            {loading ? <Loader2 className="size-3 animate-spin" /> : <Play className="size-3" />}
-            Check Messages Now
-          </Button>
+          {/* 24/7 Polling Status */}
+          {status.autoReplyEnabled ? (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/30 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                  <Activity className={cn("size-4", pollStatus.running && "animate-pulse")} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-emerald-800">
+                    {pollStatus.running ? "24/7 Auto-Reply Active" : "Auto-Reply Starting..."}
+                  </p>
+                  {pollStatus.running ? (
+                    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-emerald-600">
+                      {pollStatus.lastCheck ? (
+                        <span>Last check: {pollStatus.lastCheck.toLocaleTimeString()}</span>
+                      ) : null}
+                      {pollStatus.repliedCount > 0 ? (
+                        <span>Replied: {pollStatus.repliedCount} messages</span>
+                      ) : null}
+                      {pollStatus.checkedCount > 0 ? (
+                        <span>Checks: {pollStatus.checkedCount}</span>
+                      ) : null}
+                      {pollStatus.lastError ? (
+                        <span className="text-amber-600">Error: {pollStatus.lastError}</span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : step === "sent" || step === "password" ? (
         <form onSubmit={verifyCode} className="grid gap-4">
