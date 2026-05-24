@@ -1,9 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramRaw, getBotMe } from "@/lib/notifications/telegram";
-
-function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL || "https://baba-store.vercel.app").replace(/\/+$/, "");
-}
+import { getCatalogApps, getCatalogApp } from "@/lib/catalog/catalog";
+import { getCategories } from "@/lib/catalog/catalog";
+import type { CatalogApp } from "@/lib/catalog/types";
 
 type Ctx = {
   chatId: string;
@@ -22,64 +21,34 @@ function link(url: string, label: string): string {
   return `[${label.replace(/[_*[\]()~`>#+\-=|{}.!]/g, "\\$&")}](${url})`;
 }
 
-async function sendReply(chatId: string, text: string, replyTo?: number) {
+async function sendReply(chatId: string, text: string) {
   return sendTelegramRaw("sendMessage", {
     chat_id: chatId,
     text,
     parse_mode: "MarkdownV2",
-    disable_web_page_preview: true,
-    ...(replyTo ? { reply_to_message_id: replyTo } : {})
+    disable_web_page_preview: true
   });
-}
-
-// ── Catalog API helpers ─────────────────────────
-
-async function fetchApps(params: Record<string, string>) {
-  const url = new URL(`${siteUrl()}/api/catalog/apps`);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString());
-  if (!res.ok) return null;
-  return res.json() as Promise<{ apps: Record<string, unknown>[]; total: number }>;
-}
-
-async function fetchApp(slug: string) {
-  const url = `${siteUrl()}/api/catalog/lookup?slug=${encodeURIComponent(slug)}`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const data = await res.json();
-  return (data as { app?: Record<string, unknown> }).app ?? null;
-}
-
-async function fetchCategories() {
-  try {
-    const res = await fetch(`${siteUrl()}/api/catalog/categories`);
-    if (!res.ok) return [];
-    const data = await res.json() as { categories?: Array<{ name: string; slug: string; count: number }> };
-    return data.categories ?? [];
-  } catch {
-    return [];
-  }
 }
 
 // ── Command handlers ────────────────────────────
 
 async function cmdStart(ctx: Ctx) {
   const lines = [
-    `👋 *Welcome to BabaStore Bot\\!*`,
-    ``,
-    `Browse and download Android apps right from Telegram\\.`,
-    ``,
-    `*Commands:*`,
-    `\`/categories\` \\- Browse app categories`,
-    `\`/browse <category>\` \\- List apps in a category`,
-    `\`/search <query>\` \\- Search for apps`,
-    `\`/app <name>\` \\- Get app details \\& download link`,
-    `\`/download <slug>\` \\- Direct download link`,
-    `\`/help\` \\- Show this help`,
+    "👋 *Welcome to BabaStore Bot\\!*",
+    "",
+    "Browse and download Android apps right from Telegram\\.",
+    "",
+    "*Commands:*",
+    "`/categories` \\- Browse app categories",
+    "`/browse <category>` \\- List apps in a category",
+    "`/search <query>` \\- Search for apps",
+    "`/app <name>` \\- Get app details \\& download link",
+    "`/download <slug>` \\- Direct download link",
+    "`/help` \\- Show this help"
   ];
 
   if (ctx.isAdmin) {
-    lines.push(``, `*Admin:*`, `\`/stats\` \\- Bot statistics`);
+    lines.push("", "*Admin:*", "`/stats` \\- Bot statistics");
   }
 
   await sendReply(ctx.chatId, lines.join("\n"));
@@ -90,152 +59,182 @@ async function cmdHelp(ctx: Ctx) {
 }
 
 async function cmdCategories(ctx: Ctx) {
-  const cats = await fetchCategories();
-  if (!cats?.length) {
-    return sendReply(ctx.chatId, "No categories available right now.");
-  }
+  try {
+    const cats = await getCategories();
+    if (!cats?.length) {
+      return sendReply(ctx.chatId, "No categories available right now.");
+    }
 
-  const lines = ["*Categories:*", ""];
-  for (const cat of cats) {
-    lines.push(`📁 ${md(cat.name)} \\(${cat.count} apps\\) \\- \`/browse ${cat.slug}\``);
-  }
-  lines.push("", "Use `/browse <category>` to see apps.");
+    const lines = ["*Categories:*", ""];
+    for (const cat of cats) {
+      lines.push(`📁 ${md(cat.name)} \\(${cat.count} apps\\) \\- \`/browse ${cat.slug}\``);
+    }
+    lines.push("", "Use `/browse <category>` to see apps.");
 
-  await sendReply(ctx.chatId, lines.join("\n"));
+    await sendReply(ctx.chatId, lines.join("\n"));
+  } catch (err) {
+    console.error("cmdCategories error:", err);
+    await sendReply(ctx.chatId, "Could not load categories. Please try again later.");
+  }
 }
 
 async function cmdBrowse(ctx: Ctx) {
-  const category = ctx.args[0];
-  if (!category) {
-    return sendReply(ctx.chatId, "Usage: `/browse <category>`\nExample: `/browse games`");
-  }
+  try {
+    const category = ctx.args[0];
+    if (!category) {
+      return sendReply(ctx.chatId, "Usage: `/browse <category>`\nExample: `/browse games`");
+    }
 
-  const result = await fetchApps({ category, limit: "10", sort: "popularity" });
-  if (!result || !result.apps.length) {
-    return sendReply(ctx.chatId, `No apps found in category *${md(category)}*\\.`);
-  }
+    const result = await getCatalogApps({ category, limit: 10, sort: "popularity" });
+    if (!result?.length) {
+      return sendReply(ctx.chatId, `No apps found in category *${md(category)}*\\.`);
+    }
 
-  const lines = [`*${md(category)} — Top ${Math.min(result.apps.length, 10)} apps:*`, ""];
-  for (let i = 0; i < Math.min(result.apps.length, 10); i++) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const app = result.apps[i] as any;
-    lines.push(
-      `${i + 1}\\. *${md(app.name || "Unknown")}*` +
-      (app.rating ? ` ⭐${app.rating}` : "") +
-      (app.downloads ? ` \\- ${formatNum(app.downloads)} dl` : "")
-    );
-  }
-  lines.push("", `Use \`/app <name>\` for details and download link\\.`);
+    const lines = [`*${md(category)} — Top ${Math.min(result.length, 10)} apps:*`, ""];
+    for (let i = 0; i < Math.min(result.length, 10); i++) {
+      const app = result[i] as CatalogApp;
+      lines.push(
+        `${i + 1}\\. *${md(app.name || "Unknown")}*` +
+        (app.rating ? ` ⭐${app.rating}` : "") +
+        (app.downloads !== undefined ? ` \\- ${formatNum(app.downloads)} dl` : "")
+      );
+    }
+    lines.push("", "Use `/app <name>` for details and download link\\.");
 
-  await sendReply(ctx.chatId, lines.join("\n"));
+    await sendReply(ctx.chatId, lines.join("\n"));
+  } catch (err) {
+    console.error("cmdBrowse error:", err);
+    await sendReply(ctx.chatId, "Could not browse category. Please try again later.");
+  }
 }
 
 async function cmdSearch(ctx: Ctx) {
-  const query = ctx.args.join(" ");
-  if (!query || query.length < 2) {
-    return sendReply(ctx.chatId, "Usage: `/search <query>`\nExample: `/search vpn`");
-  }
+  try {
+    const query = ctx.args.join(" ");
+    if (!query || query.length < 2) {
+      return sendReply(ctx.chatId, "Usage: `/search <query>`\nExample: `/search vpn`");
+    }
 
-  const result = await fetchApps({ q: query, limit: "10" });
-  if (!result || !result.apps.length) {
-    return sendReply(ctx.chatId, `No results for *${md(query)}*\\.`);
-  }
+    const result = await getCatalogApps({ query, limit: 10 });
+    if (!result?.length) {
+      return sendReply(ctx.chatId, `No results for *${md(query)}*\\.`);
+    }
 
-  const lines = [`*Search results for "${md(query)}":*`, ""];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const app of result.apps.slice(0, 10) as any[]) {
-    lines.push(
-      `🔹 *${md(app.name || "Unknown")}*` +
-      (app.rating ? ` ⭐${app.rating}` : "") +
-      ` \\- \`/app ${md(app.name || "").toLowerCase().replace(/\s+/g, "-")}\``
-    );
-  }
+    const lines = [`*Search results for "${md(query)}":*`, ""];
+    for (const app of result.slice(0, 10)) {
+      const a = app as CatalogApp;
+      const slugArg = md((a.name || "app").toLowerCase().replace(/\s+/g, "-"));
+      lines.push(
+        `🔹 *${md(a.name || "Unknown")}*` +
+        (a.rating ? ` ⭐${a.rating}` : "") +
+        ` \\- \`/app ${slugArg}\``
+      );
+    }
 
-  await sendReply(ctx.chatId, lines.join("\n"));
+    await sendReply(ctx.chatId, lines.join("\n"));
+  } catch (err) {
+    console.error("cmdSearch error:", err);
+    await sendReply(ctx.chatId, "Search failed. Please try again later.");
+  }
 }
 
 async function cmdApp(ctx: Ctx) {
-  const name = ctx.args.join(" ");
-  if (!name) {
-    return sendReply(ctx.chatId, "Usage: `/app <name>`\nExample: `/app my app`");
+  try {
+    const name = ctx.args.join(" ");
+    if (!name) {
+      return sendReply(ctx.chatId, "Usage: `/app <name>`\nExample: `/app my app`");
+    }
+
+    // Try lookup by slug first
+    const slug = name.toLowerCase().replace(/\s+/g, "-");
+    let app = await getCatalogApp(slug);
+
+    // Fallback to search
+    if (!app) {
+      const result = await getCatalogApps({ query: name, limit: 1 });
+      if (result?.length) app = result[0] as CatalogApp;
+    }
+
+    if (!app) {
+      return sendReply(ctx.chatId, `Could not find app *${md(name)}*\\. Try \`/search ${md(name)}\` first\\.`);
+    }
+
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://baba-store.vercel.app").replace(/\/+$/, "");
+    const appUrl = `${siteUrl}/apps/${app.slug || ""}`;
+    const downloadSlug = app.slug || "";
+
+    const lines = [
+      `*${md(app.name || "App")}*`,
+      "",
+      app.summary ? `${md(app.summary)}` : null,
+      "",
+      app.developer ? `👤 *Developer:* ${md(app.developer)}` : null,
+      app.category ? `📁 *Category:* ${md(app.category)}` : null,
+      app.rating ? `⭐ *Rating:* ${app.rating}/5 \\(${app.reviews || 0} reviews\\)` : null,
+      app.downloads !== undefined ? `📥 *Downloads:* ${formatNum(app.downloads)}` : null,
+      app.sizeBytes ? `💾 *Size:* ${formatSize(app.sizeBytes)}` : null,
+      app.version ? `📦 *Version:* ${md(app.version)}` : null,
+      "",
+      `🔗 ${link(appUrl, "View on BabaStore")}`,
+      downloadSlug ? `📥 ${link(`${siteUrl}/api/download/${downloadSlug}`, "Download APK")}` : null
+    ].filter(Boolean);
+
+    await sendReply(ctx.chatId, lines.join("\n"));
+  } catch (err) {
+    console.error("cmdApp error:", err);
+    await sendReply(ctx.chatId, "Could not find app details. Please try again.");
   }
-
-  // Try lookup by slug first, then search
-  let app = await fetchApp(name.toLowerCase().replace(/\s+/g, "-"));
-  if (!app) {
-    const result = await fetchApps({ q: name, limit: "1" });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (result?.apps?.length) app = result.apps[0] as any;
-  }
-
-  if (!app) {
-    return sendReply(ctx.chatId, `Could not find app *${md(name)}*\\. Try \`/search ${md(name)}\` first\\.`);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const a = app as any;
-  const sUrl = siteUrl();
-  const appUrl = `${sUrl}/apps/${a.slug || ""}`;
-  const downloadSlug = a.slug || a.id || "";
-
-  const lines = [
-    `*${md(a.name || "App")}*`,
-    ``,
-    a.summary ? `${md(a.summary)}` : null,
-    ``,
-    a.developer ? `👤 *Developer:* ${md(a.developer)}` : null,
-    a.category ? `📁 *Category:* ${md(a.category)}` : null,
-    a.rating ? `⭐ *Rating:* ${a.rating}/5 \\(${a.reviews || 0} reviews\\)` : null,
-    a.downloads ? `📥 *Downloads:* ${formatNum(a.downloads)}` : null,
-    a.sizeBytes ? `💾 *Size:* ${formatSize(a.sizeBytes as number)}` : null,
-    a.version ? `📦 *Version:* ${md(a.version)}` : null,
-    ``,
-    `🔗 ${link(appUrl, "View on BabaStore")}`,
-    downloadSlug ? `📥 ${link(`${sUrl}/api/download/${downloadSlug}`, "Download APK")}` : null
-  ].filter(Boolean);
-
-  await sendReply(ctx.chatId, lines.join("\n"));
 }
 
 async function cmdDownload(ctx: Ctx) {
-  const slug = ctx.args[0];
-  if (!slug) {
-    return sendReply(ctx.chatId, "Usage: `/download <slug>`\nExample: `/download app-1234-my-app`");
+  try {
+    const slug = ctx.args[0];
+    if (!slug) {
+      return sendReply(ctx.chatId, "Usage: `/download <slug>`\nExample: `/download app-1234-my-app`");
+    }
+
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://baba-store.vercel.app").replace(/\/+$/, "");
+    const downloadUrl = `${siteUrl}/api/download/${encodeURIComponent(slug)}`;
+
+    await sendReply(ctx.chatId, `📥 *Download:* ${link(downloadUrl, "Click to download")}\n\nSlug: \`${md(slug)}\``);
+  } catch (err) {
+    console.error("cmdDownload error:", err);
+    await sendReply(ctx.chatId, "Download link failed. Please try again.");
   }
-
-  const sUrl = siteUrl();
-  const downloadUrl = `${sUrl}/api/download/${encodeURIComponent(slug)}`;
-
-  await sendReply(ctx.chatId, `📥 *Download:* ${link(downloadUrl, "Click to download")}\n\nSlug: \`${md(slug)}\``);
 }
 
 async function cmdStats(ctx: Ctx) {
-  if (!ctx.isAdmin) return;
+  try {
+    if (!ctx.isAdmin) return;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const logTb = createAdminClient().from("telegram_chat_logs") as any;
-  const { count: totalLogs } = await logTb.select("*", { count: "exact", head: true });
-  const { count: todayLogs } = await logTb
-    .select("*", { count: "exact", head: true })
-    .gte("created_at", new Date(Date.now() - 86400000).toISOString());
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const logTb = createAdminClient().from("telegram_chat_logs") as any;
+    const { count: totalLogs } = await logTb.select("*", { count: "exact", head: true });
+    const { count: todayLogs } = await logTb
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", new Date(Date.now() - 86400000).toISOString());
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rulesTb = createAdminClient().from("telegram_automations") as any;
-  const { data: rules } = await rulesTb.select("id").eq("is_active", true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rulesTb = createAdminClient().from("telegram_automations") as any;
+    const { data: rules } = await rulesTb.select("id").eq("is_active", true);
 
-  const bot = await getBotMe();
+    const bot = await getBotMe();
 
-  const lines = [
-    `*Bot Stats*`,
-    ``,
-    `🤖 *Bot:* ${bot.ok ? `@${bot.bot?.username}` : "Unknown"}`,
-    `📊 *Total messages:* ${totalLogs ?? 0}`,
-    `📊 *Today:* ${todayLogs ?? 0}`,
-    `⚙️ *Active rules:* ${rules?.length ?? 0}`,
-    `✅ *24/7 Worker:* ${process.env.SUPABASE_SERVICE_ROLE_KEY ? "Configured" : "Not configured"}`
-  ];
+    const lines = [
+      "*Bot Stats*",
+      "",
+      `🤖 *Bot:* ${bot.ok ? `@${bot.bot?.username}` : "Unknown"}`,
+      `📊 *Total messages:* ${totalLogs ?? 0}`,
+      `📊 *Today:* ${todayLogs ?? 0}`,
+      `⚙️ *Active rules:* ${rules?.length ?? 0}`,
+      `✅ *24/7 Worker:* ${process.env.SUPABASE_SERVICE_ROLE_KEY ? "Configured" : "Not configured"}`
+    ];
 
-  await sendReply(ctx.chatId, lines.join("\n"));
+    await sendReply(ctx.chatId, lines.join("\n"));
+  } catch (err) {
+    console.error("cmdStats error:", err);
+    await sendReply(ctx.chatId, "Stats unavailable. Try again later.");
+  }
 }
 
 // ── Router ──────────────────────────────────────
@@ -290,7 +289,8 @@ function formatNum(n: number | undefined): string {
   return String(n);
 }
 
-function formatSize(bytes: number): string {
+function formatSize(bytes: number | undefined): string {
+  if (!bytes) return "0 B";
   if (bytes >= 1_073_741_824) return `${(bytes / 1_073_741_824).toFixed(1)} GB`;
   if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`;
   if (bytes >= 1_024) return `${(bytes / 1_024).toFixed(1)} KB`;
