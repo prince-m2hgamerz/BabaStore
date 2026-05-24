@@ -152,6 +152,7 @@ async function feedFetch<T>(url: string) {
     headers: {
       Accept: "application/json"
     },
+    signal: AbortSignal.timeout(5000),
     next: {
       revalidate: 600
     }
