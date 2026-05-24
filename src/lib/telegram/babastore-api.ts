@@ -1,20 +1,21 @@
 const API_BASE = "https://babastore.m2hgamerz.workers.dev/api/7";
-
 const FETCH_TIMEOUT = 6000;
 
 type FeedApp = {
-  id?: string;
+  id?: number | string;
   name?: string;
-  package?: string;
   app?: string;
+  package?: string;
+  uname?: string;
+  size?: number;
   icon?: string;
   graphic?: string;
-  size?: number;
-  updated?: string;
-  modified?: string;
   added?: string;
-  developer?: { name?: string; id?: string };
-  store?: { name?: string; app?: string; appearance?: { description?: string } };
+  modified?: string;
+  updated?: string;
+  uptype?: string;
+  developer?: { id?: number; name?: string; website?: string; email?: string; privacy?: string };
+  store?: { id?: number; name?: string; avatar?: string; appearance?: { theme?: string; description?: string }; stats?: { apps?: number; subscribers?: number; downloads?: number } };
   file?: {
     vername?: string;
     vercode?: number;
@@ -24,30 +25,51 @@ type FeedApp = {
     path_alt?: string;
     added?: string;
     tags?: string[];
-    malware?: { rank?: number };
+    signature?: { sha1?: string; owner?: string };
+    malware?: { rank?: string; reason?: unknown; added?: string; modified?: string };
+    hardware?: Record<string, unknown>;
+    used_permissions?: string[];
+    used_features?: string[];
+    flags?: Record<string, unknown>;
   };
   media?: {
     description?: string;
     summary?: string;
     news?: string;
     keywords?: string[];
-    screenshots?: { url?: string }[];
+    screenshots?: { url?: string; height?: number; width?: number }[];
+    videos?: { type?: string; url?: string; thumbnail?: string }[];
   };
   stats?: {
-    pdownloads?: number;
     downloads?: number;
+    pdownloads?: number;
+    rating?: { avg?: number; total?: number; votes?: { value?: number; count?: number }[] };
     prating?: { avg?: number; total?: number };
-    rating?: { avg?: number; total?: number };
   };
-  age?: { title?: string; name?: string };
+  age?: { name?: string; title?: string; pegi?: string; rating?: number };
+  obb?: Record<string, unknown>;
+  appcoins?: { advertising?: boolean; billing?: boolean; flags?: unknown[] };
+  urls?: Record<string, string>;
+  has_versions?: boolean;
 };
 
-type ApiResponse = {
-  app?: FeedApp;
-  apps?: FeedApp[];
-  total?: number;
-  count?: number;
-  data?: FeedApp[];
+type SearchResponse = {
+  info: Record<string, unknown>;
+  datalist: {
+    total: number;
+    count: number;
+    offset: number;
+    limit: number;
+    next: number | null;
+    hidden: number;
+    loaded: boolean;
+    list: FeedApp[];
+  };
+};
+
+type MetaResponse = {
+  info: Record<string, unknown>;
+  data: FeedApp;
 };
 
 async function apiFetch<T>(path: string): Promise<T> {
@@ -63,50 +85,68 @@ async function apiFetch<T>(path: string): Promise<T> {
 function mapApp(a: FeedApp) {
   const name = a.name || a.app || "Unknown";
   const pkg = a.package || "";
-  const id = a.id || "";
-  const slug = `app-${id}-${name.toLowerCase().replace(/\s+/g, "-")}`;
+  const id = a.id?.toString() || "";
+  const date = a.updated || a.modified || a.added || "";
   const rating = a.stats?.prating?.avg ?? a.stats?.rating?.avg ?? null;
   const reviews = a.stats?.prating?.total ?? a.stats?.rating?.total ?? 0;
   const downloads = a.stats?.pdownloads ?? a.stats?.downloads ?? 0;
   const version = a.file?.vername ?? "Latest";
-  const developer = a.developer?.name || a.store?.name || "BabaStore";
-  const description = a.media?.description || a.store?.appearance?.description || "";
+  const description = a.media?.description || "";
   const summary = a.media?.summary || description.slice(0, 160);
-  const tags = [...(a.media?.keywords ?? []), ...(a.file?.tags ?? [])];
   return {
     id: `babastore:${id || pkg}`,
-    slug,
+    slug: `app-${id}-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`,
     name,
     packageName: pkg,
-    developer,
+    developer: a.developer?.name || a.store?.name || "BabaStore",
+    developerId: a.developer?.id?.toString() || "0",
     version,
     rating,
     reviews,
     downloads,
     sizeBytes: a.file?.filesize ?? a.size ?? null,
-    updatedAt: a.updated ?? a.modified ?? a.file?.added ?? a.added ?? "",
-    description,
+    updatedAt: date,
+    description: description.slice(0, 1000),
     summary: summary.slice(0, 300),
-    tags: tags.slice(0, 10),
+    tags: a.media?.keywords || a.file?.tags || [],
     iconUrl: a.icon ?? null,
     bannerUrl: a.graphic ?? null,
+    category: categoryFromKeywords(a.media?.keywords),
   };
+}
+
+function categoryFromKeywords(keywords?: string[]): string {
+  if (!keywords?.length) return "Apps";
+  const text = keywords.join(" ").toLowerCase();
+  if (text.includes("game")) return "Games";
+  if (text.includes("vpn")) return "VPN";
+  if (text.includes("ai") || text.includes("chatbot") || text.includes("intelligence")) return "AI";
+  if (text.includes("social") || text.includes("chat") || text.includes("message")) return "Social";
+  if (text.includes("photo") || text.includes("video") || text.includes("music") || text.includes("entertain")) return "Entertainment";
+  if (text.includes("learn") || text.includes("education") || text.includes("teach")) return "Education";
+  if (text.includes("tool") || text.includes("utility") || text.includes("manager") || text.includes("editor")) return "Tools";
+  if (text.includes("communication") || text.includes("call") || text.includes("dialer")) return "Communication";
+  return "Apps";
 }
 
 export type BotApp = ReturnType<typeof mapApp>;
 
 export async function searchApps(query: string, limit = 10): Promise<BotApp[]> {
   const path = `/apps/search/query=${encodeURIComponent(query)}/limit=${limit}`;
-  const data = await apiFetch<ApiResponse>(path);
-  const apps = data.apps || data.data || [];
-  return apps.map(mapApp).filter(Boolean);
+  const data = await apiFetch<SearchResponse>(path);
+  return (data.datalist?.list || []).map(mapApp).filter(Boolean);
+}
+
+export async function searchAppsAll(query: string, limit = 100): Promise<BotApp[]> {
+  const path = `/apps/search/query=${encodeURIComponent(query)}/limit=${limit}`;
+  const data = await apiFetch<SearchResponse>(path);
+  return (data.datalist?.list || []).map(mapApp).filter(Boolean);
 }
 
 export async function getAppByPackage(pkg: string): Promise<BotApp | null> {
   try {
-    const data = await apiFetch<ApiResponse>(`/app/getMeta/package_name=${encodeURIComponent(pkg)}`);
-    if (data.app) return mapApp(data.app);
-    if (data.apps?.length) return mapApp(data.apps[0]!);
+    const data = await apiFetch<MetaResponse>(`/app/getMeta/package_name=${encodeURIComponent(pkg)}`);
+    if (data.data) return mapApp(data.data);
     return null;
   } catch {
     return null;
@@ -115,8 +155,8 @@ export async function getAppByPackage(pkg: string): Promise<BotApp | null> {
 
 export async function getAppById(id: string): Promise<BotApp | null> {
   try {
-    const data = await apiFetch<ApiResponse>(`/app/getMeta/app_id=${encodeURIComponent(id)}`);
-    if (data.app) return mapApp(data.app);
+    const data = await apiFetch<MetaResponse>(`/app/getMeta/app_id=${encodeURIComponent(id)}`);
+    if (data.data) return mapApp(data.data);
     return null;
   } catch {
     return null;
@@ -125,26 +165,23 @@ export async function getAppById(id: string): Promise<BotApp | null> {
 
 export async function listApps(store = "apps", limit = 10): Promise<BotApp[]> {
   const path = `/listApps/store_name=${encodeURIComponent(store)}/limit=${limit}`;
-  const data = await apiFetch<ApiResponse>(path);
-  const apps = data.apps || data.data || [];
-  return apps.map(mapApp).filter(Boolean);
+  const data = await apiFetch<SearchResponse>(path);
+  return (data.datalist?.list || []).map(mapApp).filter(Boolean);
 }
 
-export async function getStoreApps(store: string, limit = 10): Promise<BotApp[]> {
+export async function getStoreApps(store: string, limit = 20): Promise<BotApp[]> {
   const path = `/apps/get/store_name=${encodeURIComponent(store)}/limit=${limit}`;
-  const data = await apiFetch<ApiResponse>(path);
-  const apps = data.apps || data.data || [];
-  return apps.map(mapApp).filter(Boolean);
+  const data = await apiFetch<SearchResponse>(path);
+  return (data.datalist?.list || []).map(mapApp).filter(Boolean);
 }
 
-export async function getAppVersions(pkg: string) {
-  const data = await apiFetch<{
-    versions?: { vername?: string; vercode?: number; filesize?: number; added?: string }[];
-  }>(`/app/getVersions/package_name=${encodeURIComponent(pkg)}`);
-  return data.versions || [];
+export async function searchByCategory(store: string, category: string, limit = 10): Promise<BotApp[]> {
+  const all = await getStoreApps(store, 100);
+  const cat = category.toLowerCase();
+  return all.filter((a) => a.category.toLowerCase() === cat).slice(0, limit);
 }
 
-const CATEGORY_MAP: Record<string, string> = {
+const CATEGORY_QUERIES: Record<string, string> = {
   games: "games",
   vpn: "vpn",
   ai: "ai",
@@ -155,31 +192,30 @@ const CATEGORY_MAP: Record<string, string> = {
   communication: "communication",
 };
 
-export const CATEGORY_NAMES = Object.keys(CATEGORY_MAP);
+export const CATEGORY_NAMES = Object.keys(CATEGORY_QUERIES);
 
 export function resolveCategory(input: string): string | null {
   const key = input.toLowerCase().trim();
-  if (CATEGORY_MAP[key]) return CATEGORY_MAP[key]!;
-  for (const [name, query] of Object.entries(CATEGORY_MAP)) {
-    if (name.startsWith(key)) return query;
-    if (query.startsWith(key)) return query;
+  if (CATEGORY_QUERIES[key]) return key;
+  for (const name of CATEGORY_NAMES) {
+    if (name.startsWith(key)) return name;
   }
   return null;
 }
 
 export async function browseCategory(category: string, limit = 10): Promise<BotApp[]> {
-  const query = CATEGORY_MAP[category.toLowerCase()];
+  const query = CATEGORY_QUERIES[category.toLowerCase()];
   if (!query) return [];
   return searchApps(query, limit);
 }
 
 export async function getCategoryCount(category: string): Promise<number> {
-  const query = CATEGORY_MAP[category.toLowerCase()];
+  const query = CATEGORY_QUERIES[category.toLowerCase()];
   if (!query) return 0;
   try {
     const path = `/apps/search/query=${encodeURIComponent(query)}/limit=1`;
-    const data = await apiFetch<ApiResponse>(path);
-    return data.total ?? data.count ?? 0;
+    const data = await apiFetch<SearchResponse>(path);
+    return data.datalist?.total ?? 0;
   } catch {
     return 0;
   }
