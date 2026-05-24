@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramRaw } from "@/lib/notifications/telegram";
 import { generateTelegramReply } from "@/lib/ai/nvidia";
+import { handleCommand } from "@/lib/telegram/commands";
 
 type AutomationRule = {
   id: string;
@@ -62,6 +63,22 @@ export async function processTelegramUpdate(update: {
   const incomingText = msg.text;
   const senderName = msg.from?.first_name ?? "User";
 
+  // ── Handle bot commands first ──
+  const isAdmin = msg.from?.id
+    ? await isSenderAdmin(msg.from.id)
+    : false;
+
+  const handled = await handleCommand(incomingText, {
+    chatId,
+    chatType: msg.chat.type,
+    senderId: msg.from?.id,
+    senderName,
+    args: [],
+    isAdmin
+  });
+  if (handled) return;
+
+  // ── Fall through to auto-reply rules ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tb = createAdminClient().from("telegram_automations") as any;
 
@@ -116,4 +133,12 @@ export async function processTelegramUpdate(update: {
     text: aiReply,
     automation_id: matchedRule.id
   });
+}
+
+// ── Helpers ─────────────────────────────────────
+
+function isSenderAdmin(userId: number): boolean {
+  const adminId = process.env.VITE_TELEGRAM_ADMIN_CHAT_ID;
+  if (!adminId) return false;
+  return String(userId) === adminId;
 }

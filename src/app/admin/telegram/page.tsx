@@ -22,6 +22,7 @@ import { AutomationRuleForm } from "./automation-rule-form";
 import { PersonalAccountForm } from "./personal-account-form";
 import { deleteTelegramAutomationAction } from "@/app/admin/actions";
 import { IntervalWorkerStatus } from "./interval-worker-status";
+import { TelegramSetupButton } from "./telegram-setup-button";
 
 export const metadata: Metadata = {
   title: "Telegram Bot"
@@ -302,6 +303,21 @@ export default async function TelegramBotPage() {
             </CardContent>
           </Card>
         ) : null}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Webhook className="size-4" />
+              Setup Bot
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-3 text-sm text-neutral-500">
+              Auto-configure the webhook URL and register bot commands with Telegram.
+            </p>
+            <TelegramSetupButton />
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

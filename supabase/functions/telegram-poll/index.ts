@@ -5,46 +5,108 @@ serve(async () => {
   const start = Date.now();
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseKey) {
+      return new Response(
+        JSON.stringify({ error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-    const { data: account } = await supabase
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Check if account is connected and auto-reply is enabled
+    const { data: account, error: accountError } = await supabase
       .from("telegram_account")
       .select("auto_reply_enabled, is_connected, session_string")
-      .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (!account?.auto_reply_enabled || !account?.session_string) {
+    if (accountError) {
+      console.error("DB error reading telegram_account:", accountError.message);
       return new Response(
-        JSON.stringify({ skipped: true, reason: "not_connected_or_disabled" }),
+        JSON.stringify({ error: `DB error: ${accountError.message}` }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!account) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "no_account_row" }),
         { headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const baseUrl = Deno.env.get("NEXT_PUBLIC_SITE_URL") || "https://baba-store.vercel.app";
-    const res = await fetch(`${baseUrl}/api/telegram/user/check-messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" }
-    });
-    const result = await res.json();
-
-    const elapsed = Date.now() - start;
-    console.log(`Telegram poll [${elapsed}ms]: checked ${result.checked}, replied ${result.replied}`);
-
-    if (result.error) {
-      console.error("Telegram poll error:", result.error);
+    if (!account.is_connected || !account.session_string) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "not_connected" }),
+        { headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    return new Response(JSON.stringify({ ok: true, ...result }), {
+    if (!account.auto_reply_enabled) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "auto_reply_disabled" }),
+        { headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Call the Next.js API on Vercel
+    const baseUrl = Deno.env.get("NEXT_PUBLIC_SITE_URL") || "https://baba-store.vercel.app";
+    const apiUrl = `${baseUrl.replace(/\/+$/, "")}/api/telegram/user/check-messages`;
+
+    console.log(`Calling: ${apiUrl}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000); // 55s timeout
+
+    let res: Response;
+    try {
+      res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const elapsed = Date.now() - start;
+    let result: Record<string, unknown>;
+    try {
+      result = await res.json();
+    } catch {
+      result = { rawStatus: res.status, rawText: await res.text().catch(() => "") };
+    }
+
+    console.log(`Telegram poll [${elapsed}ms]:`, JSON.stringify(result));
+
+    if (result.error) {
+      console.error("Telegram poll API error:", result.error);
+    }
+
+    // Log this poll attempt to telegram_chat_logs for diagnostics
+    const { error: logError } = await supabase
+      .from("telegram_chat_logs")
+      .insert({
+        chat_id: "system",
+        direction: "incoming",
+        text: `[EdgeFunction] poll at ${new Date().toISOString()}`,
+        reply: JSON.stringify({ checked: result.checked, replied: result.replied, error: result.error })
+      });
+
+    if (logError) {
+      console.error("Failed to log poll result:", logError.message);
+    }
+
+    return new Response(JSON.stringify({ ok: true, elapsed, ...result }), {
       headers: { "Content-Type": "application/json" }
     });
   } catch (err) {
-    console.error("Telegram poll function error:", String(err));
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    const elapsed = Date.now() - start;
+    console.error(`Telegram poll function error [${elapsed}ms]:`, String(err));
+    return new Response(
+      JSON.stringify({ error: String(err), elapsed }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 });
