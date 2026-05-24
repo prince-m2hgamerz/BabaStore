@@ -65,18 +65,22 @@ export async function processTelegramUpdate(update: {
 
   // ── Handle bot commands first ──
   const isAdmin = msg.from?.id
-    ? await isSenderAdmin(msg.from.id)
+    ? isSenderAdmin(msg.from.id)
     : false;
 
-  const handled = await handleCommand(incomingText, {
-    chatId,
-    chatType: msg.chat.type,
-    senderId: msg.from?.id,
-    senderName,
-    args: [],
-    isAdmin
-  });
-  if (handled) return;
+  try {
+    const handled = await handleCommand(incomingText, {
+      chatId,
+      chatType: msg.chat.type,
+      senderId: msg.from?.id,
+      senderName,
+      args: [],
+      isAdmin
+    });
+    if (handled) return;
+  } catch (cmdErr) {
+    console.error("Command dispatch error:", cmdErr);
+  }
 
   // ── Fall through to auto-reply rules ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

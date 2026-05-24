@@ -2,9 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTelegramRaw, getBotMe } from "@/lib/notifications/telegram";
 
 function siteUrl(): string {
-  const url = process.env.NEXT_PUBLIC_SITE_URL;
-  if (!url) throw new Error("NEXT_PUBLIC_SITE_URL is not set");
-  return url.replace(/\/+$/, "");
+  return (process.env.NEXT_PUBLIC_SITE_URL || "https://baba-store.vercel.app").replace(/\/+$/, "");
 }
 
 type Ctx = {
@@ -53,8 +51,14 @@ async function fetchApp(slug: string) {
 }
 
 async function fetchCategories() {
-  const { getCategories } = await import("@/lib/catalog/catalog");
-  return getCategories();
+  try {
+    const res = await fetch(`${siteUrl()}/api/catalog/categories`);
+    if (!res.ok) return [];
+    const data = await res.json() as { categories?: Array<{ name: string; slug: string; count: number }> };
+    return data.categories ?? [];
+  } catch {
+    return [];
+  }
 }
 
 // ── Command handlers ────────────────────────────
@@ -250,23 +254,31 @@ const commandMap: Record<string, (ctx: Ctx) => Promise<unknown>> = {
 const adminCommands = new Set(["stats"]);
 
 export async function handleCommand(text: string, ctx: Ctx): Promise<boolean> {
-  // Parse /command@botusername args
-  const match = text.match(/^\/(\w+)(?:@\w+)?(?:\s+(.*))?$/);
-  if (!match) return false;
+  try {
+    const match = text.match(/^\/(\w+)(?:@\w+)?(?:\s+(.*))?$/);
+    if (!match) return false;
 
-  const cmd = match[1]!.toLowerCase();
-  const args = (match[2] || "").trim().split(/\s+/).filter(Boolean);
-  const handler = commandMap[cmd];
-  if (!handler) return false;
+    const cmd = match[1]!.toLowerCase();
+    const args = (match[2] || "").trim().split(/\s+/).filter(Boolean);
+    const handler = commandMap[cmd];
+    if (!handler) return false;
 
-  // Check admin-only commands
-  if (adminCommands.has(cmd) && !ctx.isAdmin) {
-    await sendReply(ctx.chatId, "This command is restricted to admins.");
+    if (adminCommands.has(cmd) && !ctx.isAdmin) {
+      await sendReply(ctx.chatId, "This command is restricted to admins.");
+      return true;
+    }
+
+    await handler({ ...ctx, args });
+    return true;
+  } catch (err) {
+    console.error("Command handler error:", err);
+    try {
+      await sendReply(ctx.chatId, "⚠️ An error occurred. Please try again later.");
+    } catch {
+      // Best effort
+    }
     return true;
   }
-
-  await handler({ ...ctx, args });
-  return true;
 }
 
 // ── Utility ─────────────────────────────────────

@@ -1,12 +1,37 @@
 import { NextResponse } from "next/server";
 import { processTelegramUpdate } from "@/lib/telegram/engine";
+import { sendTelegramRaw } from "@/lib/notifications/telegram";
 
 export async function POST(request: Request) {
+  let update: unknown;
   try {
-    const update = await request.json();
-    await processTelegramUpdate(update);
+    update = await request.json();
+    await processTelegramUpdate(update as {
+      update_id: number;
+      message?: {
+        message_id: number;
+        chat: { id: number; type: string; title?: string; first_name?: string; username?: string };
+        from?: { id: number; first_name?: string; username?: string };
+        text?: string;
+        date: number;
+      };
+    });
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    console.error("Webhook error:", err);
+    try {
+      const msg = update as { message?: { chat?: { id?: number } } } | undefined;
+      const chatId = msg?.message?.chat?.id;
+      if (chatId) {
+        await sendTelegramRaw("sendMessage", {
+          chat_id: String(chatId),
+          text: "⚠️ Sorry, an internal error occurred. Please try again.",
+          disable_web_page_preview: true
+        });
+      }
+    } catch {
+      // Best effort
+    }
     return NextResponse.json({ ok: true });
   }
 }
