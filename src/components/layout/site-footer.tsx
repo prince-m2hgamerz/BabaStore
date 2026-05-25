@@ -32,34 +32,43 @@ const footerGroups = [
 export function SiteFooter() {
   return (
     <footer className="border-t border-neutral-200 bg-white">
-      <div className="page-shell grid gap-6 py-8 sm:gap-8 sm:py-10 lg:grid-cols-[1.1fr_1.4fr]">
-        <div>
-          <Logo />
-          <p className="mt-3 max-w-md text-sm leading-6 text-neutral-600 sm:mt-4">
-            {siteConfig.name} helps users discover Android apps and gives
-            developers a moderated publishing workflow for APK releases.
-          </p>
-          <p className="mt-4 text-xs text-neutral-500 sm:mt-6">
-            Copyright {new Date().getFullYear()} {siteConfig.shortName}. All rights reserved.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
-          {footerGroups.map((group) => (
-            <div key={group.title}>
-              <h3 className="text-sm font-semibold text-neutral-950">{group.title}</h3>
-              <div className="mt-2 grid gap-1.5 sm:mt-3 sm:gap-2">
-                {group.links.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="text-sm text-neutral-500 transition hover:text-neutral-950"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+      <div className="page-shell pb-10 pt-10 sm:pb-16 sm:pt-16">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_2fr] lg:gap-16">
+          <div>
+            <Logo />
+            <p className="mt-4 max-w-md text-[13px] leading-6 text-neutral-600">
+              {siteConfig.name} helps users discover Android apps and gives
+              developers a moderated publishing workflow for APK releases.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+            {footerGroups.map((group) => (
+              <div key={group.title}>
+                <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500">
+                  {group.title}
+                </h3>
+                <div className="mt-4 grid gap-2.5">
+                  {group.links.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="text-[13px] text-neutral-700 transition hover:text-neutral-950"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+        <div className="mt-10 flex flex-col gap-2 border-t border-neutral-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[12px] text-neutral-500">
+            &copy; {new Date().getFullYear()} {siteConfig.shortName}. All rights reserved.
+          </p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-neutral-400">
+            Direct APK delivery
+          </p>
         </div>
       </div>
     </footer>

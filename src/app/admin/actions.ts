@@ -24,7 +24,11 @@ import type { AppStatus } from "@/lib/supabase/types";
 const appStatuses = new Set<AppStatus>(["draft", "published", "rejected", "flagged"]);
 const userRoles = new Set<UserRole>(["user", "developer", "admin"]);
 
-async function notifyDeveloperOnReview(appId: string, status: AppStatus) {
+async function notifyDeveloperOnReview(
+  appId: string,
+  status: AppStatus,
+  reason?: string | null
+) {
   try {
     const supabase = await createClient();
     const { data: app } = await supabase
@@ -41,6 +45,8 @@ async function notifyDeveloperOnReview(appId: string, status: AppStatus) {
 
     if (status === "published") {
       await sendAppPublishedEmail(developerEmail, app.name);
+    } else if (status === "rejected") {
+      await sendReviewNotificationEmail(developerEmail, app.name, false, reason);
     } else {
       await sendReviewNotificationEmail(developerEmail, app.name, false);
     }
@@ -93,6 +99,35 @@ export async function moderateSingleAppAction(appId: string, status: AppStatus, 
   revalidatePath("/admin/apps");
   revalidatePath("/");
   revalidateTag("catalog");
+}
+
+export async function moderateAppWithReasonAction(
+  appId: string,
+  status: AppStatus,
+  reason?: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await requireRole(["admin"]);
+    if (!appStatuses.has(status)) {
+      return { ok: false, error: "Invalid status." };
+    }
+    if (status === "rejected" && !reason?.trim()) {
+      return { ok: false, error: "Rejection reason is required." };
+    }
+    await updateAppsStatus([appId], status);
+    await notifyDeveloperOnReview(appId, status, reason ?? null);
+    revalidatePath("/admin");
+    revalidatePath("/admin/apps");
+    revalidatePath(`/admin/apps/${appId}`);
+    revalidatePath("/");
+    revalidateTag("catalog");
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Unable to update status."
+    };
+  }
 }
 
 export async function updateUserRoleAction(formData: FormData) {

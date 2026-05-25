@@ -2,6 +2,7 @@ import {
   ArrowRight,
   BarChart3,
   CheckCircle2,
+  ClipboardCheck,
   Database,
   Download,
   Flag,
@@ -49,6 +50,31 @@ export default async function AdminDashboardPage() {
               <p className="mt-1 max-w-lg text-sm leading-relaxed text-neutral-300">
                 You have {queue.length} app{queue.length !== 1 ? "s" : ""} pending review.
               </p>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Button
+                  asChild
+                  size="default"
+                  className="rounded-full bg-white text-neutral-950 shadow-[0_1px_2px_rgba(0,0,0,0.2)] hover:bg-neutral-100"
+                >
+                  <Link href="/admin/queue">
+                    <ClipboardCheck className="size-4" />
+                    Open review queue
+                    {queue.length > 0 ? (
+                      <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-neutral-950 px-1.5 text-[11px] font-semibold tabular-nums text-white">
+                        {queue.length}
+                      </span>
+                    ) : null}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="default"
+                  variant="ghost"
+                  className="rounded-full border border-white/20 px-5 text-white hover:bg-white/10 hover:text-white"
+                >
+                  <Link href="/admin/apps">All apps</Link>
+                </Button>
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-2 self-start rounded-lg bg-white/10 px-4 py-2.5 text-sm backdrop-blur-sm">
               <Gauge className="size-4 text-emerald-400" />
@@ -58,12 +84,18 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Review queue"
-            value={formatDownloads(overview.stats.reviewQueue)}
-            helper={`${overview.stats.flaggedApps} flagged apps`}
-            icon={ShieldCheck}
-          />
+          <Link
+            href="/admin/queue"
+            className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-neutral-950/30"
+            aria-label="Open review queue"
+          >
+            <StatCard
+              title="Review queue"
+              value={formatDownloads(overview.stats.reviewQueue)}
+              helper={`${overview.stats.flaggedApps} flagged · click to review`}
+              icon={ShieldCheck}
+            />
+          </Link>
           <StatCard
             title="Published apps"
             value={formatDownloads(overview.stats.publishedApps)}

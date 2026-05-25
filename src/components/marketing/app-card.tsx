@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { AppIcon } from "@/components/catalog/app-icon";
 import { appMetrics } from "@/lib/catalog/format";
 import type { CatalogApp } from "@/lib/catalog/types";
@@ -9,6 +9,12 @@ function parseAccentColor(accent: string) {
   return match ? `#${match[1]}` : "#171717";
 }
 
+/**
+ * Catalog grid card.
+ *
+ * Mobile: icon-on-top vertical card (works at 165px wide in a 2-col grid).
+ * Desktop: icon-left horizontal card with summary line.
+ */
 export function AppCard({ app, compact = false }: { app: CatalogApp; compact?: boolean }) {
   const metrics = appMetrics(app);
   const accentColor = parseAccentColor(app.accent);
@@ -17,55 +23,92 @@ export function AppCard({ app, compact = false }: { app: CatalogApp; compact?: b
   return (
     <Link
       href={`/apps/${app.slug}`}
-      className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-[#28feaf]/40 rounded-md group"
+      className="group block h-full rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-neutral-950/30"
     >
-      <div className="relative h-full rounded-md bg-white transition-all duration-200 hover:shadow-[0px_2px_2px_rgba(0,0,0,0.04),0px_8px_16px_-4px_rgba(0,0,0,0.06),inset_0_0_0_1px_rgba(0,0,0,0.08)] active:scale-[0.97] shadow-[0px_1px_1px_rgba(0,0,0,0.03),0px_2px_2px_rgba(0,0,0,0.04),inset_0_0_0_1px_rgba(0,0,0,0.08)]">
+      <div className="relative h-full rounded-lg border border-neutral-200 bg-white shadow-[0_1px_1px_rgba(0,0,0,0.03)] transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-level-3 active:scale-[0.99]">
         <div
-          className="absolute left-0 top-2 h-[calc(100%-16px)] w-[3px] rounded-r-sm opacity-60 transition-opacity group-hover:opacity-100"
+          className="absolute left-0 top-3 hidden h-[calc(100%-24px)] w-[2px] rounded-r-sm opacity-0 transition-opacity group-hover:opacity-100 sm:block"
           style={{ background: accentColor }}
+          aria-hidden
         />
-        <div className="flex items-start gap-3 p-3 sm:gap-4 sm:p-4">
+
+        {/* Mobile: vertical (icon on top) */}
+        <div className="flex flex-col p-3 sm:hidden">
           <AppIcon
             name={app.name}
             accent={app.accent}
             src={app.iconUrl}
             fallbackSrc={app.source === "catalog" ? `/api/catalog/assets/icon/${app.slug}` : null}
-            className="size-14 shrink-0 rounded-md text-lg sm:size-16 sm:text-xl"
+            className="size-[72px] text-xl"
+          />
+          <h3 className="mt-2.5 line-clamp-2 min-h-[2.4em] text-[13px] font-semibold leading-tight tracking-[-0.2px] text-neutral-950">
+            {app.name}
+          </h3>
+          <p className="mt-1 truncate text-[11px] text-neutral-500">
+            {app.developer !== "BabaStore" ? app.developer : app.category}
+          </p>
+          <div className="mt-1.5 flex items-center gap-1 text-[11px] text-neutral-600">
+            {hasRating ? (
+              <>
+                <span className="font-medium tabular-nums">{metrics.rating}</span>
+                <Star className="size-2.5 fill-amber-400 text-amber-400" />
+                <span className="ml-1 text-neutral-300">·</span>
+                <span className="text-neutral-500">{metrics.size}</span>
+              </>
+            ) : (
+              <>
+                <span className="text-neutral-400">New</span>
+                <span className="text-neutral-300">·</span>
+                <span className="text-neutral-500">{metrics.size}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop: horizontal (icon-left) */}
+        <div className="hidden items-start gap-4 p-4 sm:flex">
+          <AppIcon
+            name={app.name}
+            accent={app.accent}
+            src={app.iconUrl}
+            fallbackSrc={app.source === "catalog" ? `/api/catalog/assets/icon/${app.slug}` : null}
+            className="size-16 shrink-0 text-xl"
           />
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <h3 className="truncate text-[15px] font-semibold leading-tight text-[#171717] tracking-[-0.3px] sm:text-base">
+                <h3 className="truncate text-[15px] font-semibold leading-tight tracking-[-0.3px] text-neutral-950">
                   {app.name}
                 </h3>
-                <p className="mt-0.5 truncate text-[13px] text-[#4d4d4d] sm:text-sm">
+                <p className="mt-0.5 truncate text-[13px] text-neutral-500">
                   {app.developer !== "BabaStore" ? app.developer : app.category}
                 </p>
               </div>
               {hasRating ? (
-                <div className="flex shrink-0 items-center gap-1 rounded-md bg-[#ffefcf] px-1.5 py-0.5">
-                  <Star className="size-2.5 fill-[#f5a623] text-[#f5a623]" />
-                  <span className="text-[11px] font-medium text-[#ab570a]">{metrics.rating}</span>
+                <div className="flex shrink-0 items-center gap-1 rounded-md border border-neutral-200 bg-canvas-soft px-1.5 py-0.5">
+                  <Star className="size-2.5 fill-amber-400 text-amber-400" />
+                  <span className="text-[11px] font-medium text-neutral-700 tabular-nums">
+                    {metrics.rating}
+                  </span>
                 </div>
               ) : null}
             </div>
 
             {!compact ? (
-              <p className="mt-1.5 line-clamp-2 text-[13px] leading-[1.45] text-[#4d4d4d] sm:mt-2 sm:text-sm sm:leading-5">
+              <p className="mt-2 line-clamp-2 text-[13px] leading-5 text-neutral-600">
                 {app.summary ?? app.description}
               </p>
             ) : (
-              <p className="mt-1.5 hidden line-clamp-2 text-[13px] leading-[1.45] text-[#4d4d4d] sm:mt-2 sm:block sm:text-sm sm:leading-5">
+              <p className="mt-2 line-clamp-2 text-[13px] leading-5 text-neutral-600">
                 {app.summary ?? app.description}
               </p>
             )}
 
-            <div className="mt-2 flex items-center gap-2.5 text-[12px] text-[#888888] sm:mt-2.5 sm:text-[13px]">
-              <span className="flex items-center gap-1">
-                <Download className="size-3" />
-                {metrics.downloads}
+            <div className="mt-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.04em] text-neutral-400">
+              <span>{metrics.downloads}</span>
+              <span aria-hidden="true" className="text-neutral-300">
+                ·
               </span>
-              <span aria-hidden="true">·</span>
               <span>{metrics.size}</span>
             </div>
           </div>

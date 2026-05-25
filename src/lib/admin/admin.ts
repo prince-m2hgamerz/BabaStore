@@ -3,7 +3,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { AppStatus, Database } from "@/lib/supabase/types";
 import { formatBytes } from "@/lib/catalog/catalog";
 import type { UserRole } from "@/lib/constants";
-
 type AppRow = Database["public"]["Tables"]["apps"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
@@ -181,7 +180,9 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     categories,
     stats: {
       totalApps: apps.length,
-      reviewQueue: apps.filter((app) => app.status === "draft").length,
+      reviewQueue: apps.filter(
+        (app) => app.status === "draft" || app.status === "flagged"
+      ).length,
       publishedApps: apps.filter((app) => app.status === "published").length,
       rejectedApps: apps.filter((app) => app.status === "rejected").length,
       flaggedApps: apps.filter((app) => app.status === "flagged").length,
@@ -468,41 +469,89 @@ export async function getAdminAppById(appId: string) {
     const supabase = await createClient();
     const { data: app, error } = await supabase
       .from("apps")
-      .select("*, profiles(email,username), categories(name,slug)")
+      .select("*, profiles(email,username,role,created_at), categories(name,slug)")
       .eq("id", appId)
       .single();
 
     if (error || !app) return null;
 
-    const [versions, scans, reviews, downloads] = await Promise.all([
-      supabase
-        .from("app_versions")
-        .select("*")
-        .eq("app_id", appId)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("upload_scans")
-        .select("*")
-        .eq("package_name", ((app as { package_name: string }).package_name))
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("reviews")
-        .select("*, profiles(username,email)")
-        .eq("app_id", appId)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("downloads")
-        .select("id, created_at")
-        .eq("app_id", appId)
-    ]);
+    const packageName = (app as { package_name: string }).package_name;
+    const developerId = (app as { developer_id: string }).developer_id;
+    const apkUrl = (app as { apk_url: string | null }).apk_url;
+
+    // Use the service-role client for scans so RLS on upload_scans (which
+    // typically restricts reads to developer_id = auth.uid()) doesn't hide
+    // rows from admins reviewing another developer's submission.
+    const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createAdminClient()
+      : supabase;
+
+    // Prefer matching scans by exact R2 URL (most reliable — survives package
+    // name changes), then fall back to package_name for any older rows.
+    const scansByUrlPromise = apkUrl
+      ? adminSupabase
+          .from("upload_scans")
+          .select("*")
+          .eq("r2_url", apkUrl)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] as Database["public"]["Tables"]["upload_scans"]["Row"][] });
+
+    const scansByPackagePromise = adminSupabase
+      .from("upload_scans")
+      .select("*")
+      .eq("package_name", packageName)
+      .order("created_at", { ascending: false });
+
+    const [versions, scansByUrl, scansByPackage, reviews, downloads, screenshots, otherApps] =
+      await Promise.all([
+        supabase
+          .from("app_versions")
+          .select("*")
+          .eq("app_id", appId)
+          .order("created_at", { ascending: false }),
+        scansByUrlPromise,
+        scansByPackagePromise,
+        supabase
+          .from("reviews")
+          .select("*, profiles(username,email)")
+          .eq("app_id", appId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("downloads")
+          .select("id, created_at")
+          .eq("app_id", appId),
+        supabase
+          .from("app_screenshots")
+          .select("*")
+          .eq("app_id", appId)
+          .order("sort_order", { ascending: true }),
+        supabase
+          .from("apps")
+          .select("id, name, package_name, status, version, updated_at")
+          .eq("developer_id", developerId)
+          .neq("id", appId)
+          .order("updated_at", { ascending: false })
+          .limit(6)
+      ]);
+
+    // Merge and de-dupe — URL matches first (most reliable), package matches after.
+    const scanIds = new Set<string>();
+    const mergedScans: Database["public"]["Tables"]["upload_scans"]["Row"][] = [];
+    [...(scansByUrl.data ?? []), ...(scansByPackage.data ?? [])].forEach((scan) => {
+      if (scanIds.has(scan.id)) return;
+      scanIds.add(scan.id);
+      mergedScans.push(scan);
+    });
 
     return {
       ...app,
       developer: Array.isArray(app.profiles) ? app.profiles[0] : app.profiles,
       category: Array.isArray(app.categories) ? app.categories[0] : app.categories,
       versions: versions.data ?? [],
-      scans: scans.data ?? [],
+      scans: mergedScans,
       reviews: reviews.data ?? [],
+      screenshots: screenshots.data ?? [],
+      otherDeveloperApps: otherApps.data ?? [],
       totalDownloads: downloads.data?.length ?? 0
     };
   } catch {

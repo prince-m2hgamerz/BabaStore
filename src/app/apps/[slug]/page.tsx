@@ -7,11 +7,12 @@ import {
   BadgeCheck,
   CalendarDays,
   CheckCircle2,
+  ChevronRight,
   Download,
   FileArchive,
   Globe,
-  LockKeyhole,
   PackageCheck,
+  Share2,
   ShieldCheck,
   Star,
   Tags
@@ -24,23 +25,18 @@ import {
   getRelatedApps,
   getCatalogAssetProxy
 } from "@/lib/catalog/catalog";
-import { AppCard } from "@/components/marketing/app-card";
+import { AppTile } from "@/components/catalog/app-tile";
 import { AppIcon } from "@/components/catalog/app-icon";
 import { InstallButton } from "@/components/catalog/install-button";
 import { WishlistButton } from "@/components/catalog/wishlist-button";
 import { RatingForm } from "@/components/catalog/rating-form";
+import { RatingHistogram } from "@/components/catalog/rating-histogram";
+import { AboutApp } from "@/components/catalog/about-app";
 import { ScreenshotCarousel } from "@/components/catalog/screenshot-carousel";
 import { TopNav } from "@/components/layout/top-nav";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { SiteFooter } from "@/components/layout/site-footer";
 
 export async function generateMetadata({
@@ -92,10 +88,10 @@ export default async function AppDetailPage({
   }
 
   const apps = await getCatalogApps();
-  const similarApps = await getRelatedApps(app, 4);
+  const similarApps = await getRelatedApps(app, 8);
   const metrics = appMetrics(app);
   const hasRating = app.rating !== null;
-  const similarFallback = apps.filter((item) => item.id !== app.id).slice(0, 4);
+  const similarFallback = apps.filter((item) => item.id !== app.id).slice(0, 8);
   const relatedApps = similarApps.length ? similarApps : similarFallback;
   const isLocalListing = app.source === "local";
   const versionItems = app.versions?.length
@@ -113,8 +109,10 @@ export default async function AppDetailPage({
       ];
   const reviewItems = app.reviewItems ?? [];
   const iconFallback = getCatalogAssetProxy({ source: app.source, slug: app.slug, asset: "icon" });
-  const screenshots = app.screenshots.map((screenshot, index) =>
-    getCatalogAssetProxy({ source: app.source, slug: app.slug, asset: "screenshot", index }) ?? screenshot
+  const screenshots = app.screenshots.map(
+    (screenshot, index) =>
+      getCatalogAssetProxy({ source: app.source, slug: app.slug, asset: "screenshot", index }) ??
+      screenshot
   );
 
   const appJsonLd = {
@@ -148,331 +146,450 @@ export default async function AppDetailPage({
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="has-install-bar md:has-bottom-nav min-h-screen bg-canvas-soft">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(appJsonLd) }}
       />
       <TopNav />
       <main>
-        <section className="relative overflow-hidden border-b border-neutral-200 bg-white">
-          <div className="mesh-hero absolute inset-x-0 top-0 h-72 opacity-70" />
-          <div className="page-shell relative pb-8 pt-3 sm:pb-10 sm:pt-6">
-            <Button variant="ghost" size="sm" asChild>
+        {/* Header — compact mobile layout, full desktop layout */}
+        <section className="border-b border-neutral-200 bg-white">
+          <div className="page-shell pb-4 pt-2 sm:pb-10 sm:pt-6">
+            <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2 h-8 sm:mb-5 sm:h-9">
               <Link href="/">
                 <ArrowLeft />
-                Store
+                Back
               </Link>
             </Button>
-            <div className="mt-4 grid min-w-0 gap-4 sm:mt-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-              <Card className="overflow-hidden shadow-float">
-                <div className="relative h-24 border-b border-neutral-200 sm:h-36 lg:h-44" style={{ background: app.accent }}>
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.55),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,0.08))]" />
+
+            {/* Mobile: icon + title in a tight row, then meta line */}
+            <div className="flex items-center gap-3 sm:hidden">
+              <AppIcon
+                name={app.name}
+                accent={app.accent}
+                src={app.iconUrl}
+                fallbackSrc={iconFallback}
+                lazy={false}
+                className="size-[68px] text-2xl"
+              />
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-[19px] font-semibold leading-tight tracking-[-0.4px] text-neutral-950">
+                  {app.name}
+                </h1>
+                <p className="mt-0.5 truncate text-[13px] text-blue-600">
+                  {app.developer}
+                </p>
+                <p className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.1em] text-neutral-400">
+                  {app.category}
+                </p>
+              </div>
+            </div>
+
+            {/* Mobile key stats row */}
+            <div className="mt-4 grid grid-cols-3 divide-x divide-neutral-200 rounded-xl border border-neutral-200 bg-canvas-soft sm:hidden">
+              <div className="flex flex-col items-center justify-center px-1 py-2.5">
+                <div className="flex items-center gap-1 text-[13px] font-semibold text-neutral-950">
+                  {hasRating ? metrics.rating : "—"}
+                  <Star className="size-3 fill-amber-400 text-amber-400" />
                 </div>
-                <CardContent className="grid gap-4 p-4 sm:p-6">
-                  <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:gap-5">
-                    <AppIcon
-                      name={app.name}
-                      accent={app.accent}
-                      src={app.iconUrl}
-                      fallbackSrc={iconFallback}
-                      className="size-16 text-2xl sm:size-24 lg:size-28"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <Badge variant="secondary" className="font-mono text-[10px] sm:text-xs">
-                          {app.category.toUpperCase()}
-                        </Badge>
-                        <Badge variant={isLocalListing ? "success" : "secondary"} className="text-[10px] sm:text-xs">
-                          <ShieldCheck className="mr-1 size-3" />
-                          BabaStore verified
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                          <BadgeCheck className="mr-1 size-3" />
-                          Verified listing
-                        </Badge>
-                      </div>
-                      <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-normal text-neutral-950 sm:mt-3 sm:text-4xl lg:text-5xl">
-                        {app.name}
-                      </h1>
-                      <p className="mt-1 break-words text-sm text-neutral-600 sm:mt-2 sm:text-base">{app.developer}</p>
-                      <p className="mt-3 max-w-2xl break-words text-sm leading-6 text-neutral-600 [overflow-wrap:anywhere] sm:mt-4 sm:text-base sm:leading-7">
-                        {app.summary ?? app.description}
-                      </p>
-                      <div className="mt-4 flex flex-col gap-3 sm:mt-5 sm:flex-row">
-                        <InstallButton slug={app.slug} />
-                        <WishlistButton appId={app.id} slug={app.slug} />
-                      </div>
+                <p className="mt-0.5 text-[10px] text-neutral-500">
+                  {hasRating ? `${metrics.reviews} reviews` : "No ratings"}
+                </p>
+              </div>
+              <div className="flex flex-col items-center justify-center px-1 py-2.5">
+                <div className="text-[13px] font-semibold text-neutral-950">
+                  {metrics.downloads}
+                </div>
+                <p className="mt-0.5 text-[10px] text-neutral-500">Downloads</p>
+              </div>
+              <div className="flex flex-col items-center justify-center px-1 py-2.5">
+                <div className="text-[13px] font-semibold text-neutral-950">
+                  {metrics.size}
+                </div>
+                <p className="mt-0.5 text-[10px] text-neutral-500">Size</p>
+              </div>
+            </div>
+
+            {/* Desktop: roomy layout */}
+            <div className="hidden flex-col gap-7 sm:flex sm:flex-row sm:items-start">
+              <AppIcon
+                name={app.name}
+                accent={app.accent}
+                src={app.iconUrl}
+                fallbackSrc={iconFallback}
+                lazy={false}
+                className="size-[120px] text-4xl lg:size-[140px]"
+              />
+              <div className="min-w-0 flex-1">
+                <h1 className="display-tight text-[36px] font-semibold leading-tight text-neutral-950 lg:text-[44px]">
+                  {app.name}
+                </h1>
+                <p className="mt-1 text-[15px] text-blue-600 hover:underline">
+                  {app.developer}
+                </p>
+
+                <div className="mt-5 grid max-w-2xl grid-cols-4 divide-x divide-neutral-200 rounded-xl border border-neutral-200 bg-canvas-soft">
+                  <div className="flex flex-col items-center justify-center px-3 py-4">
+                    <div className="flex items-center gap-1 text-[15px] font-semibold text-neutral-950">
+                      {hasRating ? metrics.rating : "—"}
+                      <Star className="size-3.5 fill-amber-400 text-amber-400" />
                     </div>
+                    <p className="mt-0.5 text-[11px] text-neutral-500">
+                      {hasRating ? `${metrics.reviews} reviews` : "No ratings"}
+                    </p>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
-                    {[
-                      { icon: Download, label: "Downloads", value: metrics.downloads },
-                      { icon: Star, label: "Rating", value: hasRating ? metrics.rating : "No ratings" },
-                      { icon: FileArchive, label: "Size", value: metrics.size },
-                      { icon: PackageCheck, label: "Version", value: app.version }
-                    ].map((item) => (
-                      <div key={item.label} className="min-w-0 rounded-md border border-neutral-200 bg-neutral-50 p-2 sm:p-3">
-                        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-neutral-500 sm:gap-2 sm:text-xs">
-                          <item.icon className="size-3 sm:size-4" />
-                          {item.label}
-                        </div>
-                        <div className="mt-1 break-words text-sm font-semibold text-neutral-950 sm:mt-2 sm:text-lg">{item.value}</div>
-                      </div>
-                    ))}
+                  <div className="flex flex-col items-center justify-center px-3 py-4">
+                    <div className="text-[15px] font-semibold text-neutral-950">
+                      {metrics.downloads}
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-neutral-500">Downloads</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="flex flex-col items-center justify-center px-3 py-4">
+                    <div className="text-[15px] font-semibold text-neutral-950">
+                      {metrics.size}
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-neutral-500">Size</p>
+                  </div>
+                  <div className="flex flex-col items-center justify-center px-3 py-4">
+                    <div className="text-[15px] font-semibold text-neutral-950">
+                      {app.version}
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-neutral-500">Version</p>
+                  </div>
+                </div>
 
-              <div className="grid min-w-0 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>App details</CardTitle>
-                    <CardDescription>Metadata and store trust signals.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="grid gap-4">
-                    {[
-                      { icon: CalendarDays, label: "Updated", value: formatDate(app.updatedAt) },
-                      { icon: Globe, label: "Package", value: app.packageName },
-                      { icon: LockKeyhole, label: "APK", value: app.apkUrl ? "Ready" : "Missing" },
-                      { icon: ShieldCheck, label: "Review state", value: "BabaStore verified" }
-                    ].map((item) => (
-                      <div key={item.label} className="flex min-w-0 items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 text-sm text-neutral-500">
-                          <item.icon className="size-4" />
-                          {item.label}
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <InstallButton slug={app.slug} />
+                  <WishlistButton appId={app.id} slug={app.slug} />
+                  <Button variant="ghost" size="lg" className="rounded-full">
+                    <Share2 />
+                    Share
+                  </Button>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center gap-1.5">
+                  <Badge variant="secondary" className="font-mono text-[10px]">
+                    {app.category.toUpperCase()}
+                  </Badge>
+                  <Badge variant="success" className="text-[10px]">
+                    <ShieldCheck className="mr-1 size-3" />
+                    Verified
+                  </Badge>
+                  <Badge variant="secondary" className="text-[10px]">
+                    <BadgeCheck className="mr-1 size-3" />
+                    Editor reviewed
+                  </Badge>
+                  {app.tags.slice(0, 2).map((tag) => (
+                    <Badge key={tag} variant="secondary" className="text-[10px]">
+                      <Tags className="mr-1 size-3" />
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile: trust badges row only — install button lives in the sticky bar */}
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:hidden">
+              <Badge variant="success" className="text-[10px]">
+                <ShieldCheck className="mr-1 size-3" />
+                Verified
+              </Badge>
+              <Badge variant="secondary" className="text-[10px]">
+                <BadgeCheck className="mr-1 size-3" />
+                Editor reviewed
+              </Badge>
+              {app.tags.slice(0, 1).map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-[10px]">
+                  <Tags className="mr-1 size-3" />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Screenshots */}
+        <section className="page-shell pt-5 sm:pt-10">
+          <ScreenshotCarousel appName={app.name} screenshots={screenshots} />
+        </section>
+
+        {/* About this app */}
+        <section className="page-shell pt-6 sm:pt-12">
+          <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-7">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[16px] font-semibold tracking-[-0.4px] text-neutral-950 sm:text-[20px]">
+                About this app
+              </h2>
+              <ChevronRight className="size-4 text-neutral-300 sm:size-5" aria-hidden />
+            </div>
+            {app.summary ? (
+              <p className="mt-2 text-[13px] leading-6 text-neutral-600 sm:text-[15px]">
+                {app.summary}
+              </p>
+            ) : null}
+            <div className="mt-3 sm:mt-4">
+              <AboutApp description={app.description ?? ""} />
+            </div>
+            {app.tags.length ? (
+              <div className="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-3 sm:mt-5 sm:pt-4">
+                {app.tags.map((tag) => (
+                  <Link
+                    key={tag}
+                    href={`/?q=${encodeURIComponent(tag)}`}
+                    className="rounded-full border border-neutral-200 bg-canvas-soft px-2.5 py-1 text-[11px] font-medium text-neutral-700 transition hover:bg-white hover:text-neutral-950 sm:px-3 sm:text-[12px]"
+                  >
+                    {tag}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        {/* Data safety / app info */}
+        <section className="page-shell pt-4 sm:pt-8">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+            <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-6">
+              <h3 className="text-[14px] font-semibold text-neutral-950 sm:text-[16px]">
+                Data safety
+              </h3>
+              <p className="mt-1.5 text-[12px] leading-5 text-neutral-600 sm:mt-2 sm:text-[13px] sm:leading-6">
+                BabaStore checks every published listing before it goes live.
+              </p>
+              <ul className="mt-3 grid gap-2 text-[12px] text-neutral-700 sm:mt-4 sm:gap-3 sm:text-[13px]">
+                {[
+                  "Approved before public release.",
+                  "Downloads via signed URLs.",
+                  "Wishlist and ratings tied to accounts."
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-600 sm:size-4" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-6">
+              <h3 className="text-[14px] font-semibold text-neutral-950 sm:text-[16px]">
+                App info
+              </h3>
+              <dl className="mt-3 grid gap-2.5 text-[12px] sm:mt-4 sm:gap-3 sm:text-[13px]">
+                {[
+                  { icon: PackageCheck, label: "Version", value: app.version },
+                  { icon: CalendarDays, label: "Updated", value: formatDate(app.updatedAt) },
+                  { icon: FileArchive, label: "Size", value: metrics.size },
+                  { icon: Globe, label: "Package", value: app.packageName },
+                  { icon: Download, label: "Downloads", value: metrics.downloads }
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between gap-3 border-b border-neutral-100 pb-2.5 last:border-0 last:pb-0 sm:pb-3"
+                  >
+                    <span className="flex items-center gap-1.5 text-neutral-500 sm:gap-2">
+                      <item.icon className="size-3 sm:size-3.5" />
+                      {item.label}
+                    </span>
+                    <span className="min-w-0 max-w-[60%] truncate text-right font-medium text-neutral-950">
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        {/* Ratings & reviews */}
+        <section className="page-shell pt-6 sm:pt-12">
+          <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-7">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[16px] font-semibold tracking-[-0.4px] text-neutral-950 sm:text-[20px]">
+                Ratings and reviews
+              </h2>
+              <ChevronRight className="size-4 text-neutral-300 sm:size-5" aria-hidden />
+            </div>
+
+            <div className="mt-4 sm:mt-5">
+              <RatingHistogram rating={app.rating} total={app.reviews ?? 0} />
+            </div>
+
+            {reviewItems.length ? (
+              <div className="mt-6 grid gap-3 sm:mt-7 sm:grid-cols-2 sm:gap-4">
+                {reviewItems.slice(0, 4).map((item) => (
+                  <article
+                    key={item.id}
+                    className="rounded-xl border border-neutral-200 bg-canvas-soft p-3 sm:p-4"
+                  >
+                    <header className="flex items-center gap-2.5 sm:gap-3">
+                      <div className="flex size-8 items-center justify-center rounded-full bg-white text-[13px] font-semibold text-neutral-700 sm:size-9 sm:text-sm">
+                        {(item.author ?? "?").slice(0, 1).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[12px] font-medium text-neutral-950 sm:text-[13px]">
+                          {item.author ?? "Anonymous"}
+                        </p>
+                        <div className="mt-0.5 flex items-center gap-1 text-[11px] text-neutral-500 sm:text-[12px]">
+                          <span className="stars">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className={
+                                  i < (item.rating ?? 0)
+                                    ? "size-3 fill-current"
+                                    : "size-3 text-neutral-300"
+                                }
+                              />
+                            ))}
+                          </span>
+                          {item.createdAt ? <span>· {formatDate(item.createdAt)}</span> : null}
                         </div>
-                        <div className="min-w-0 max-w-[60%] break-words text-right text-sm font-medium text-neutral-950 [overflow-wrap:anywhere]">{item.value}</div>
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
+                    </header>
+                    {item.title ? (
+                      <p className="mt-2.5 text-[12px] font-medium text-neutral-950 sm:text-[13px]">
+                        {item.title}
+                      </p>
+                    ) : null}
+                    {item.body ? (
+                      <p className="mt-1 line-clamp-4 text-[12px] leading-5 text-neutral-600 sm:line-clamp-5 sm:text-[13px] sm:leading-6">
+                        {item.body}
+                      </p>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-5 text-[12px] text-neutral-500 sm:text-[13px]">
+                No reviews yet. Be the first to share what you think.
+              </p>
+            )}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Trust cues</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 text-sm text-neutral-600">
-                    {[
-                      "Approved before appearing in the public store.",
-                      "Downloads are routed through the BabaStore install endpoint.",
-                      "Wishlist and rating actions stay tied to signed-in accounts."
-                    ].map((item) => (
-                      <div key={item} className="flex min-w-0 items-start gap-3 rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-blue-600" />
-                        <span className="min-w-0 break-words">{item}</span>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
+            <div className="mt-6 border-t border-neutral-100 pt-4 sm:mt-7 sm:pt-5">
+              <h3 className="text-[13px] font-semibold text-neutral-950 sm:text-[14px]">
+                Rate this app
+              </h3>
+              <div className="mt-3 max-w-xl">
+                <RatingForm appId={app.id} slug={app.slug} disabled={!isLocalListing} />
               </div>
             </div>
           </div>
         </section>
 
-        <section className="page-shell grid min-w-0 gap-4 py-6 sm:gap-6 sm:py-10 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
-          <div className="grid min-w-0 gap-4 sm:gap-8">
-            <ScreenshotCarousel appName={app.name} screenshots={screenshots} />
+        {/* What's new */}
+        <section className="page-shell pt-6 sm:pt-12">
+          <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-7">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <h2 className="text-[16px] font-semibold tracking-[-0.4px] text-neutral-950 sm:text-[20px]">
+                What&apos;s new
+              </h2>
+              <p className="text-[11px] text-neutral-500 sm:text-[12px]">
+                v<span className="font-medium text-neutral-700">{app.version}</span> · {formatDate(app.updatedAt)}
+              </p>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>About this app</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <p className="whitespace-pre-wrap break-words text-sm leading-6 text-neutral-600 [overflow-wrap:anywhere] sm:text-base sm:leading-8">
-                  {app.description}
-                </p>
-                {app.tags.length ? (
-                  <div className="flex flex-wrap gap-2">
-                    {app.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary">
-                        <Tags className="mr-1 size-3" />
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
+            {app.changelog.length ? (
+              <ul className="mt-3 grid gap-1.5 text-[12px] leading-6 text-neutral-700 sm:mt-4 sm:gap-2 sm:text-[13px]">
+                {app.changelog.map((line) => (
+                  <li key={line} className="flex gap-2">
+                    <span className="mt-2 size-1 shrink-0 rounded-full bg-neutral-400" />
+                    <span className="break-words [overflow-wrap:anywhere]">{line}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-[12px] text-neutral-500 sm:text-[13px]">
+                No release notes for this version.
+              </p>
+            )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Version history</CardTitle>
-                <CardDescription>
-                  Current APK release notes and recent changes.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border border-neutral-200">
-                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-neutral-200 bg-neutral-50 px-4 py-3">
-                    <div className="min-w-0">
-                      <p className="break-words text-sm font-medium text-neutral-950 [overflow-wrap:anywhere]">
-                        Version {app.version}
-                      </p>
-                      <p className="text-xs text-neutral-500">
-                        Updated {formatDate(app.updatedAt)}
-                      </p>
+            {versionItems.length > 1 ? (
+              <details className="group mt-4 sm:mt-5">
+                <summary className="inline-flex cursor-pointer items-center gap-1 text-[12px] font-medium text-neutral-700 underline-offset-4 hover:underline sm:text-[13px]">
+                  Older versions
+                  <ChevronRight className="size-3 transition-transform group-open:rotate-90 sm:size-3.5" />
+                </summary>
+                <div className="mt-3 grid gap-2">
+                  {versionItems.slice(1).map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-canvas-soft px-3 py-2 text-[12px] sm:text-[13px]"
+                    >
+                      <div>
+                        <p className="font-medium text-neutral-950">v{item.version}</p>
+                        <p className="text-[10px] text-neutral-500 sm:text-[11px]">
+                          {formatDate(item.updatedAt)}
+                        </p>
+                      </div>
+                      {item.apkUrl ? (
+                        <Button variant="secondary" size="sm" asChild className="h-8 rounded-full">
+                          <Link href={item.apkUrl} target="_blank" rel="noreferrer">
+                            <Download />
+                            Download
+                          </Link>
+                        </Button>
+                      ) : null}
                     </div>
-                    <Badge variant="success">Latest</Badge>
-                  </div>
-                  {versionItems.length ? (
-                    <div className="grid gap-3 p-4">
-                      {versionItems.map((item) => (
-                        <div key={item.id} className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="break-words text-sm font-medium text-neutral-950 [overflow-wrap:anywhere]">
-                                Version {item.version}
-                              </p>
-                              <p className="text-xs text-neutral-500">
-                                Updated {formatDate(item.updatedAt)}
-                              </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Badge variant="secondary">
-                                {item.malwareRank ?? "Release"}
-                              </Badge>
-                              {item.apkUrl ? (
-                                <Button variant="secondary" size="sm" asChild>
-                                  <Link href={item.apkUrl} target="_blank" rel="noreferrer">
-                                    Download
-                                  </Link>
-                                </Button>
-                              ) : null}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : app.changelog.length ? (
-                    <div className="grid gap-3 p-4">
-                      {app.changelog.map((item) => (
-                        <div key={item} className="flex min-w-0 gap-3 text-sm text-neutral-600">
-                          <span className="mt-2 size-1.5 shrink-0 rounded-full bg-neutral-950" />
-                          <span className="min-w-0 break-words [overflow-wrap:anywhere]">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="p-4 text-sm leading-6 text-neutral-600">
-                      No release notes have been published for this version.
-                    </p>
-                  )}
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
+              </details>
+            ) : null}
           </div>
-
-          <aside className="grid h-fit gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Install flow</CardTitle>
-                <CardDescription>
-                  Downloads are routed through the BabaStore endpoint.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm leading-6 text-neutral-600">
-                  The install button sends users through the BabaStore install route and streams the APK from the store endpoint.
-                </p>
-                <Separator />
-                <div className="grid gap-2 text-sm">
-                  <div className="flex justify-between gap-4">
-                    <span className="text-neutral-500">Package</span>
-                    <span className="break-all font-mono text-xs text-neutral-950">
-                      {app.packageName}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">Source</span>
-                    <span className="text-neutral-950">
-                      {app.apkUrl ? "BabaStore" : "Missing"}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Ratings and reviews</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {hasRating ? (
-                  <div className="flex items-end gap-3">
-                    <span className="text-5xl font-semibold tracking-normal text-neutral-950">
-                      {metrics.rating}
-                    </span>
-                    <div className="pb-2">
-                      <div className="flex text-amber-400">
-                        {Array.from({ length: 5 }).map((_, index) => (
-                          <Star
-                            key={index}
-                            className={
-                              index < Math.round(app.rating ?? 0)
-                                ? "size-4 fill-current"
-                                : "size-4 text-neutral-300"
-                            }
-                          />
-                        ))}
-                      </div>
-                      <p className="mt-1 text-xs text-neutral-500">
-                        {metrics.reviews} reviews
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm leading-6 text-neutral-600">
-                    No users have rated this app yet.
-                  </p>
-                )}
-                {reviewItems.length ? (
-                  <div className="mt-5 grid gap-3">
-                    {reviewItems.slice(0, 4).map((item) => (
-                      <div key={item.id} className="rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-600">
-                        <div className="flex items-center justify-between gap-3">
-                          <strong className="text-neutral-950">{item.author}</strong>
-                          <span>{item.rating ?? "?"}/5</span>
-                        </div>
-                        {item.title ? <p className="mt-1 break-words font-medium text-neutral-950">{item.title}</p> : null}
-                        {item.body ? <p className="mt-1 break-words leading-6">{item.body}</p> : null}
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-                <div className="mt-5 border-t border-neutral-200 pt-5">
-                  <RatingForm appId={app.id} slug={app.slug} disabled={!isLocalListing} />
-                </div>
-              </CardContent>
-            </Card>
-          </aside>
         </section>
 
+        {/* More like this */}
         {relatedApps.length ? (
-          <section className="page-shell pb-16">
-            <div className="mb-4 flex items-end justify-between gap-4">
+          <section className="page-shell pb-8 pt-8 sm:pb-16 sm:pt-14">
+            <div className="mb-2.5 flex items-end justify-between gap-3 sm:mb-4">
               <div>
-                <p className="mono-label">SIMILAR APPS</p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-normal text-neutral-950">
-                  More in {app.category}.
+                <p className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500 sm:block">
+                  Similar
+                </p>
+                <h2 className="text-[15px] font-semibold tracking-[-0.3px] text-neutral-950 sm:mt-1 sm:text-[22px] sm:tracking-[-0.6px]">
+                  More like this
                 </h2>
               </div>
-              <Button variant="secondary" size="sm" asChild>
-                <Link href={`/?category=${app.categorySlug}`}>
-                  View category
-                </Link>
-              </Button>
+              <Link
+                href={`/?category=${app.categorySlug}`}
+                className="text-[12px] font-medium text-neutral-600 transition hover:text-neutral-950 sm:text-[13px]"
+              >
+                View all
+              </Link>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 scrollbar-none sm:mx-0 sm:gap-4 sm:px-0">
               {relatedApps.map((item) => (
-                <AppCard key={item.id} app={item} compact />
+                <div key={item.id} className="snap-start">
+                  <AppTile app={item} size="md" />
+                </div>
               ))}
+              <div className="w-2 shrink-0 sm:hidden" aria-hidden />
             </div>
           </section>
         ) : null}
       </main>
+
+      {/* Sticky install bar — mobile only, sits ABOVE the bottom nav */}
+      <div className="install-bar bottom-[64px]" style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}>
+        <div className="flex items-center gap-2.5">
+          <AppIcon
+            name={app.name}
+            accent={app.accent}
+            src={app.iconUrl}
+            className="size-9"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[12px] font-medium text-neutral-950">{app.name}</p>
+            <p className="truncate text-[10px] text-neutral-500">
+              {hasRating ? `${metrics.rating} ★ · ${metrics.size}` : metrics.size}
+            </p>
+          </div>
+          <InstallButton slug={app.slug} size="default" className="h-9 px-4 text-[13px]" />
+        </div>
+      </div>
+
       <SiteFooter />
+      <BottomNav />
     </div>
   );
 }

@@ -132,19 +132,42 @@ export async function sendAppPublishedEmail(
 export async function sendReviewNotificationEmail(
   email: string,
   appName: string,
-  approved: boolean
+  approved: boolean,
+  reason?: string | null
 ) {
   const status = approved ? "approved" : "rejected";
   const icon = approved ? "✅" : "⚠️";
+  const reasonBlock = !approved && reason
+    ? `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0">
+          <tr>
+            <td style="padding:14px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px">
+              <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#7f1d1d;text-transform:uppercase;letter-spacing:0.04em">Reason</p>
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#7f1d1d;white-space:pre-wrap">${escapeHtml(reason)}</p>
+            </td>
+          </tr>
+        </table>
+      `
+    : "";
   return sendEmail({
     to: email,
     subject: `"${appName}" was ${status}`,
     html: `
       <h2 style="font-size:20px;font-weight:600;margin:0 0 8px">Review complete ${icon}</h2>
-      <p style="margin:0 0 16px;color:#4d4d4d">Your app <strong>${appName}</strong> has been reviewed and <strong>${status}</strong> by the BabaStore team.</p>
-      ${approved ? primaryButton(`${SITE_URL}/developer/apps`, "View my apps") : `<p style="margin:16px 0 0;color:#888;font-size:13px">If your app was rejected, you can make changes and resubmit it for review.</p>`}
+      <p style="margin:0 0 16px;color:#4d4d4d">Your app <strong>${escapeHtml(appName)}</strong> has been reviewed and <strong>${status}</strong> by the BabaStore team.</p>
+      ${reasonBlock}
+      ${approved ? primaryButton(`${SITE_URL}/developer/apps`, "View my apps") : `<p style="margin:16px 0 0;color:#888;font-size:13px">Make the changes above and resubmit when ready.</p>${primaryButton(`${SITE_URL}/developer/apps`, "Open developer console")}`}
     `
   });
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 export async function sendMarketingEmail(params: {

@@ -29,12 +29,17 @@ import { getAdminOverview } from "@/lib/admin/admin";
 import { formatDate, formatDownloads } from "@/lib/catalog/catalog";
 import { moderateAppsAction, moderateSingleAppAction } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
 
 type UploadScan = Database["public"]["Tables"]["upload_scans"]["Row"];
 
 async function getAppScanMap(): Promise<Map<string, UploadScan[]>> {
-  const supabase = await createClient();
+  // upload_scans is typically RLS-restricted to the owning developer. Use the
+  // service-role client so admins see scans across every developer.
+  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createAdminClient()
+    : await createClient();
   const { data } = await supabase
     .from("upload_scans")
     .select("*")

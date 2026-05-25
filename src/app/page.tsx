@@ -2,27 +2,25 @@ import Link from "next/link";
 import {
   BadgeCheck,
   ChevronRight,
-  Download,
   Grid2X2,
   ShieldCheck,
   Sparkles,
-  Star,
   TrendingUp
 } from "lucide-react";
 import {
-  appMetrics,
   getCatalogApps,
   getCatalogResult,
   getCategories
 } from "@/lib/catalog/catalog";
 import type { CatalogFilters } from "@/lib/catalog/types";
-import { AppCard } from "@/components/marketing/app-card";
 import { CategoryStrip } from "@/components/catalog/category-strip";
 import { CatalogGrid } from "@/components/catalog/catalog-grid";
 import { SearchSuggestions } from "@/components/catalog/search-suggestions";
-import { AppIcon } from "@/components/catalog/app-icon";
+import { AppRail } from "@/components/catalog/app-rail";
+import { RankRow } from "@/components/catalog/rank-row";
 import { StoreFilters } from "@/components/catalog/store-filters";
 import { TopNav } from "@/components/layout/top-nav";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { FeaturedCarousel } from "@/components/marketing/featured-carousel";
 import { Badge } from "@/components/ui/badge";
@@ -30,10 +28,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const tabs = [
-  { label: "For You", value: "for-you" },
-  { label: "Top Charts", value: "top-charts" },
+  { label: "For you", value: "for-you" },
+  { label: "Top charts", value: "top-charts" },
   { label: "Categories", value: "categories" },
-  { label: "New Releases", value: "new-releases" }
+  { label: "New", value: "new-releases" }
 ];
 
 function getSearchValue(
@@ -76,50 +74,80 @@ export default async function HomePage({
   ]);
   const apps = catalogResult.apps;
   const activeTab = getSearchValue(params.tab, "for-you");
+
   const topChartApps = apps
     .slice()
     .sort((a, b) => b.downloads - a.downloads)
     .slice(0, 10);
   const newReleaseApps = apps
     .slice()
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 8);
-  const editorsPick = apps.filter((a) => a.rating && a.rating >= 4).slice(0, 10);
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    )
+    .slice(0, 10);
+  const editorsPick = apps
+    .filter((a) => a.rating && a.rating >= 4)
+    .slice(0, 10);
+  const trendingApps = apps
+    .slice()
+    .sort((a, b) => (b.rating ?? 0) * (b.reviews ?? 1) - (a.rating ?? 0) * (a.reviews ?? 1))
+    .slice(0, 10);
   const featuredApps = publishedLocalApps.length
     ? publishedLocalApps
     : apps.slice(0, Math.min(5, apps.length));
 
   return (
-    <div className="min-h-screen bg-white">
-      <TopNav searchQuery={filters.query} />
+    <div className="has-bottom-nav min-h-screen bg-canvas-soft">
+      <TopNav searchQuery={filters.query} tabs={tabs} activeTab={activeTab} />
       <main>
-        {/* Hero */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-[#f0f7ff] via-white to-white">
-          <div className="absolute -right-32 -top-32 size-96 rounded-full bg-gradient-to-br from-[#f0f7ff] to-transparent blur-3xl" />
-          <div className="absolute -bottom-32 -left-32 size-96 rounded-full bg-gradient-to-tr from-[#faf0ff] to-transparent blur-3xl" />
-          <div className="page-shell relative pb-4 pt-3 sm:pb-8 sm:pt-6">
+        {/* Hero band */}
+        <section className="relative overflow-hidden">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[300px] mesh-soft opacity-80 sm:h-[460px] sm:opacity-90"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-[260px] -z-0 h-24 bg-gradient-to-b from-transparent to-canvas-soft sm:top-[400px] sm:h-32"
+          />
+          <div className="page-shell relative pb-2 pt-3 sm:pb-6 sm:pt-10">
             {featuredApps.length ? (
-              <FeaturedCarousel apps={featuredApps} />
+              <div className="grid gap-4 sm:gap-8">
+                <div className="hidden flex-col gap-3 sm:flex">
+                  <p className="section-eyebrow">Android marketplace</p>
+                  <h1 className="display-tight max-w-3xl text-[36px] font-semibold leading-[1.05] text-neutral-950 sm:text-[48px] sm:leading-[1.02]">
+                    Discover Android apps,
+                    <br />
+                    <span className="text-neutral-500">directly.</span>
+                  </h1>
+                  <p className="max-w-xl text-[15px] leading-7 text-neutral-600 sm:text-[17px]">
+                    Browse thousands of free APKs. Publish your own. No
+                    gatekeepers, just apps.
+                  </p>
+                </div>
+                <FeaturedCarousel apps={featuredApps} />
+              </div>
             ) : (
-              <div className="flex flex-col items-center gap-3 py-8 text-center sm:gap-4 sm:py-16">
-                <Badge variant="secondary" className="w-fit font-mono text-[11px] tracking-wider">
+              <div className="flex flex-col items-center gap-4 py-12 text-center sm:py-20">
+                <Badge variant="secondary" className="w-fit font-mono text-[11px] tracking-[0.18em]">
                   <Sparkles className="mr-1.5 size-3" />
                   ANDROID APP MARKETPLACE
                 </Badge>
-                <h1 className="max-w-3xl text-3xl font-bold leading-tight tracking-tight text-neutral-950 sm:text-6xl">
+                <h1 className="display-tight max-w-3xl text-[26px] font-semibold leading-[1.05] text-neutral-950 sm:text-6xl sm:leading-[1.02]">
                   Discover Android apps, directly.
                 </h1>
-                <p className="max-w-xl text-sm leading-relaxed text-neutral-500 sm:text-lg">
+                <p className="max-w-xl text-[14px] leading-6 text-neutral-600 sm:text-lg">
                   Browse thousands of free APKs. Publish your own. No gatekeepers, just apps.
                 </p>
-                <div className="mt-2 flex gap-3 sm:mt-6">
-                  <Button size="default" className="rounded-full sm:h-12 sm:px-8 sm:text-base" asChild>
+                <div className="mt-2 flex flex-wrap justify-center gap-2 sm:mt-4 sm:gap-3">
+                  <Button size="default" className="rounded-full px-5 sm:size-lg sm:px-6" asChild>
                     <Link href="#catalog">
                       Browse apps
                       <ChevronRight />
                     </Link>
                   </Button>
-                  <Button size="default" variant="secondary" className="rounded-full sm:h-12 sm:px-8 sm:text-base" asChild>
+                  <Button size="default" variant="secondary" className="rounded-full px-5 sm:size-lg sm:px-6" asChild>
                     <Link href="/developer">Developer console</Link>
                   </Button>
                 </div>
@@ -128,141 +156,150 @@ export default async function HomePage({
           </div>
         </section>
 
-        {/* Category pills */}
-        <section className="page-shell pt-3 sm:pt-5">
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white to-transparent sm:hidden" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white to-transparent sm:hidden" />
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.slug}
-                  href={`/?category=${cat.slug}`}
-                  className="shrink-0 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-1.5 text-sm font-medium text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 active:scale-95"
-                >
-                  {cat.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Trending rail */}
+        {trendingApps.length ? (
+          <AppRail
+            apps={trendingApps}
+            eyebrow="Trending"
+            title="What people are downloading"
+            subtitle="Popular this week across the catalog"
+            href="/?sort=popularity#catalog"
+            size="md"
+          />
+        ) : null}
 
-        {/* Top Charts */}
+        {/* Top Charts — two-column ranked list */}
         {topChartApps.length ? (
-          <section className="page-shell pt-5 sm:pt-8">
-            <div className="mb-2 flex items-center justify-between sm:mb-3">
-              <h2 className="text-base font-bold text-neutral-950 sm:text-xl">
-                Top Charts
-              </h2>
-              <Link href="/?tab=top-charts&sort=downloads#catalog" className="group text-xs sm:text-sm font-medium text-neutral-600 transition hover:text-neutral-950">
-                More <ChevronRight className="ml-0.5 inline size-3.5 transition-transform group-hover:translate-x-0.5" />
+          <section className="page-shell pt-8 sm:pt-14">
+            <div className="mb-2.5 flex items-end justify-between gap-3 sm:mb-4">
+              <div>
+                <p className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500 sm:block">
+                  Top charts
+                </p>
+                <h2 className="text-[17px] font-semibold tracking-[-0.4px] text-neutral-950 sm:mt-1 sm:text-[22px] sm:tracking-[-0.6px]">
+                  Most downloaded
+                </h2>
+              </div>
+              <Link
+                href="/?tab=top-charts&sort=downloads#catalog"
+                className="group text-[12px] font-medium text-neutral-600 transition hover:text-neutral-950 sm:text-[13px]"
+              >
+                View all
+                <ChevronRight className="ml-0.5 inline size-3 transition-transform group-hover:translate-x-0.5 sm:size-3.5" />
               </Link>
             </div>
-            <div className="divide-y divide-neutral-100 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-level-2">
-              {topChartApps.slice(0, 10).map((app, index) => {
-                const medal = index === 0 ? "\u{1F947}" : index === 1 ? "\u{1F948}" : index === 2 ? "\u{1F949}" : null;
-                return (
-                <Link
-                  key={app.id}
-                  href={`/apps/${app.slug}`}
-                  className="flex items-center gap-3 px-3 py-2.5 transition hover:bg-neutral-50 active:scale-[0.99] sm:gap-4 sm:px-4 sm:py-3"
-                >
-                  <span className="flex w-6 shrink-0 items-center justify-center text-sm font-bold text-neutral-400 sm:w-7 sm:text-base">
-                    {medal ?? (
-                      <span className="text-neutral-300">{index + 1}</span>
-                    )}
-                  </span>
-                  <AppIcon
-                    name={app.name}
-                    accent={app.accent}
-                    src={app.iconUrl}
-                    className="size-10 sm:size-12"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-neutral-950 sm:text-[15px]">
-                      {app.name}
-                    </p>
-                    <p className="truncate text-xs text-neutral-500">{app.developer}</p>
-                  </div>
-                  <div className="hidden items-center gap-3 text-xs text-neutral-400 sm:flex">
-                    {app.rating !== null ? (
-                      <span className="flex items-center gap-0.5">
-                        <Star className="size-3 fill-amber-400 text-amber-400" />
-                        {app.rating.toFixed(1)}
-                      </span>
-                    ) : null}
-                    <span className="flex items-center gap-1">
-                      <Download className="size-3" />
-                      {appMetrics(app).downloads}
-                    </span>
-                  </div>
-                  <span className="inline-flex h-7 items-center rounded-full bg-[#28feaf]/15 px-3 text-xs font-medium text-[#1dbf8d] sm:hidden">
-                    <Download className="mr-1 size-3" />
-                    Install
-                  </span>
-                  <ChevronRight className="hidden size-5 shrink-0 text-neutral-300 sm:block" />
-                </Link>
-              );})}
+            <div className="rounded-xl border border-neutral-200 bg-white p-1.5 shadow-level-2 sm:p-3">
+              <div className="grid sm:grid-cols-2 sm:gap-2">
+                {topChartApps.slice(0, 10).map((app, index) => (
+                  <RankRow key={app.id} app={app} rank={index + 1} />
+                ))}
+              </div>
             </div>
           </section>
         ) : null}
 
-        {/* Editors' Choice */}
+        {/* Editor's choice rail (large tiles) */}
         {editorsPick.length ? (
-          <section className="page-shell pt-6 sm:pt-10">
-            <div className="mb-3 flex items-center justify-between sm:mb-4">
-              <h2 className="text-base font-bold text-neutral-950 sm:text-xl">
-                Editor&apos;s Choice
-              </h2>
-              <Link href="/?tab=for-you&sort=rating#catalog" className="group text-xs sm:text-sm font-medium text-neutral-600 transition hover:text-neutral-950">
-                More <ChevronRight className="ml-0.5 inline size-3.5 transition-transform group-hover:translate-x-0.5" />
+          <AppRail
+            apps={editorsPick}
+            eyebrow="Editor's choice"
+            title="Hand-picked by the team"
+            href="/?sort=rating#catalog"
+            size="lg"
+          />
+        ) : null}
+
+        {/* Popular categories */}
+        {categories.length ? (
+          <section className="page-shell pt-8 sm:pt-14">
+            <div className="mb-2.5 flex items-end justify-between gap-3 sm:mb-4">
+              <div>
+                <p className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500 sm:block">
+                  Categories
+                </p>
+                <h2 className="text-[17px] font-semibold tracking-[-0.4px] text-neutral-950 sm:mt-1 sm:text-[22px] sm:tracking-[-0.6px]">
+                  Browse by category
+                </h2>
+              </div>
+              <Link
+                href="/?tab=categories"
+                className="group text-[12px] font-medium text-neutral-600 transition hover:text-neutral-950 sm:text-[13px]"
+              >
+                View all
+                <ChevronRight className="ml-0.5 inline size-3 transition-transform group-hover:translate-x-0.5 sm:size-3.5" />
               </Link>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
-              {editorsPick.slice(0, 8).map((app) => (
-                <div key={app.id} className="w-44 shrink-0 sm:w-auto">
-                  <AppCard app={app} compact />
-                </div>
-              ))}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              {categories.slice(0, 12).map((cat, idx) => {
+                const accents = [
+                  "from-blue-500/10 to-cyan-500/10 text-blue-600",
+                  "from-purple-500/10 to-pink-500/10 text-purple-600",
+                  "from-amber-500/10 to-orange-500/10 text-amber-600",
+                  "from-emerald-500/10 to-teal-500/10 text-emerald-600",
+                  "from-rose-500/10 to-red-500/10 text-rose-600",
+                  "from-indigo-500/10 to-blue-500/10 text-indigo-600"
+                ];
+                const accent = accents[idx % accents.length];
+                return (
+                  <Link
+                    key={cat.slug}
+                    href={`/?category=${cat.slug}`}
+                    className={`group flex items-center gap-2.5 rounded-xl border border-neutral-200 bg-white p-2.5 transition hover:-translate-y-0.5 hover:shadow-level-2 sm:gap-3 sm:p-4`}
+                  >
+                    <span
+                      className={`flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${accent} sm:size-10`}
+                      aria-hidden
+                    >
+                      <Grid2X2 className="size-3.5 sm:size-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[12px] font-medium text-neutral-950 sm:text-[14px]">
+                        {cat.name}
+                      </span>
+                      <span className="block text-[10px] text-neutral-500 tabular-nums sm:text-[12px]">
+                        {cat.count} apps
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </section>
         ) : null}
 
-        {/* New Releases */}
+        {/* New releases rail */}
         {newReleaseApps.length ? (
-          <section className="page-shell pt-6 sm:pt-10">
-            <div className="mb-3 flex items-center justify-between sm:mb-4">
-              <h2 className="text-base font-bold text-neutral-950 sm:text-xl">
-                New Releases
-              </h2>
-              <Link href="/?tab=new-releases&sort=newest#catalog" className="group text-xs sm:text-sm font-medium text-neutral-600 transition hover:text-neutral-950">
-                More <ChevronRight className="ml-0.5 inline size-3.5 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
-              {newReleaseApps.map((app) => (
-                <div key={app.id} className="w-44 shrink-0 sm:w-auto">
-                  <AppCard app={app} compact />
-                </div>
-              ))}
-            </div>
-          </section>
+          <AppRail
+            apps={newReleaseApps}
+            eyebrow="New releases"
+            title="Fresh on BabaStore"
+            href="/?sort=newest#catalog"
+            size="md"
+          />
+        ) : null}
+
+        {/* Suggested for you (smaller tiles) */}
+        {apps.length > 6 ? (
+          <AppRail
+            apps={apps.slice(6, 16)}
+            eyebrow="Suggested for you"
+            title="More apps to explore"
+            href="#catalog"
+            size="sm"
+          />
         ) : null}
 
         {/* Full catalog */}
-        <section className="page-shell pb-6 pt-6 sm:pb-10 sm:pt-10" id="catalog">
-          <div className="mb-4 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {tabs.map((tab) => (
-              <Button
-                key={tab.value}
-                variant={activeTab === tab.value ? "default" : "secondary"}
-                size="sm"
-                asChild
-                className="shrink-0 rounded-full"
-              >
-                <Link href={`/?tab=${tab.value}`}>{tab.label}</Link>
-              </Button>
-            ))}
+        <section className="page-shell pb-10 pt-10 sm:pb-16 sm:pt-16" id="catalog">
+          <div className="mb-4 flex items-end justify-between gap-3 sm:mb-5">
+            <div>
+              <p className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500 sm:block">
+                Catalog
+              </p>
+              <h2 className="text-[19px] font-semibold tracking-[-0.5px] text-neutral-950 sm:mt-1 sm:text-[28px] sm:tracking-[-1px]">
+                Everything in store
+              </h2>
+            </div>
           </div>
 
           <StoreFilters
@@ -277,17 +314,17 @@ export default async function HomePage({
           />
           <SearchSuggestions query={filters.query} />
 
-          <div className="mt-4">
+          <div className="mt-3 sm:mt-4">
             <CategoryStrip categories={categories} />
           </div>
 
-          <div className="mt-5 flex flex-col gap-1 sm:mt-8 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="mono-label">ALL APPS</p>
-              <h2 className="mt-0.5 text-base font-semibold text-neutral-950 sm:mt-1 sm:text-2xl">
-                {catalogResult.total} apps ready to install
-              </h2>
-            </div>
+          <div className="mt-4 flex items-baseline justify-between gap-3 sm:mt-8">
+            <p className="text-[12px] text-neutral-500 sm:text-[13px]">
+              <span className="font-medium text-neutral-950 tabular-nums">
+                {catalogResult.total}
+              </span>{" "}
+              apps ready to install
+            </p>
           </div>
 
           {apps.length ? (
@@ -315,38 +352,111 @@ export default async function HomePage({
           )}
         </section>
 
-        {/* Features */}
-        <section className="border-t border-neutral-100">
-          <div className="page-shell py-8 sm:py-12">
-            <div className="grid gap-4 sm:gap-5 md:grid-cols-3">
-              {[
-                {
-                  icon: BadgeCheck,
-                  title: "Direct APK delivery",
-                  copy: "Install buttons route through a download endpoint backed by saved APK URLs."
-                },
-                {
-                  icon: ShieldCheck,
-                  title: "Download logging",
-                  copy: "Published apps write download events without blocking the install flow."
-                },
-                {
-                  icon: TrendingUp,
-                  title: "New releases",
-                  copy: "Latest updates are sorted from real app version and listing timestamps."
-                }
-              ].map((item) => (
-                <div key={item.title} className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 sm:p-6">
-                  <item.icon className="size-5 text-neutral-950" />
-                  <h3 className="mt-2 text-sm font-semibold text-neutral-950 sm:text-base">{item.title}</h3>
-                  <p className="mt-1 text-sm leading-6 text-neutral-600">{item.copy}</p>
-                </div>
-              ))}
+        {/* Trust band */}
+        <section className="border-t border-neutral-200 bg-white">
+          <div className="page-shell py-10 sm:py-20">
+            <div className="grid gap-7 lg:grid-cols-[1fr_2fr] lg:gap-20">
+              <div>
+                <p className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500 sm:block">
+                  Why BabaStore
+                </p>
+                <h2 className="display-tight text-[20px] font-semibold leading-[1.15] text-neutral-950 sm:mt-2 sm:text-[36px] sm:leading-[1.1]">
+                  Built like a developer platform.
+                </h2>
+                <p className="mt-2 max-w-md text-[13px] leading-6 text-neutral-600 sm:mt-3 sm:text-[15px] sm:leading-7">
+                  No gatekeepers. No ads. Just direct APK delivery and the
+                  primitives you&apos;d expect from a modern store.
+                </p>
+              </div>
+              <div className="grid gap-2.5 sm:grid-cols-3 sm:gap-4">
+                {[
+                  {
+                    icon: BadgeCheck,
+                    title: "Direct APK delivery",
+                    copy:
+                      "Install routes through a download endpoint backed by saved APK URLs."
+                  },
+                  {
+                    icon: ShieldCheck,
+                    title: "Download logging",
+                    copy:
+                      "Published apps write download events without blocking the install flow."
+                  },
+                  {
+                    icon: TrendingUp,
+                    title: "New releases",
+                    copy:
+                      "Latest updates sorted from real version and listing timestamps."
+                  }
+                ].map((item) => (
+                  <div
+                    key={item.title}
+                    className="rounded-lg border border-neutral-200 bg-canvas-soft p-4 transition hover:bg-white hover:shadow-level-2 sm:p-5"
+                  >
+                    <div className="flex size-7 items-center justify-center rounded-md bg-white shadow-level-1 sm:size-8">
+                      <item.icon className="size-3.5 text-neutral-950 sm:size-4" />
+                    </div>
+                    <h3 className="mt-3 text-[13px] font-semibold text-neutral-950 sm:mt-4 sm:text-[14px]">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1 text-[12px] leading-5 text-neutral-600 sm:text-[13px]">
+                      {item.copy}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Closing CTA — for developers */}
+        <section className="relative overflow-hidden bg-neutral-950 text-white">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-50"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 18% 30%, rgba(0, 124, 240, 0.45), transparent 32%), radial-gradient(circle at 82% 80%, rgba(255, 0, 128, 0.35), transparent 32%), radial-gradient(circle at 60% 20%, rgba(121, 40, 202, 0.35), transparent 32%)"
+            }}
+          />
+          <div className="page-shell relative py-10 sm:py-20">
+            <div className="flex flex-col items-start gap-3 sm:max-w-2xl sm:gap-5">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/60 sm:text-[11px]">
+                For developers
+              </p>
+              <h2 className="display-tight text-[22px] font-semibold leading-[1.1] sm:text-[44px]">
+                Ship your APK in minutes.
+              </h2>
+              <p className="text-[13px] leading-6 text-white/70 sm:text-[17px] sm:leading-7">
+                Upload a build, fill in the metadata, and publish. Versioning,
+                screenshots, and signed download URLs are handled for you.
+              </p>
+              <div className="mt-1 flex flex-wrap gap-2 sm:mt-2 sm:gap-3">
+                <Button
+                  size="default"
+                  asChild
+                  className="rounded-full bg-white px-5 text-neutral-950 shadow-[0_1px_2px_rgba(0,0,0,0.2)] hover:bg-neutral-100 sm:size-lg sm:px-6"
+                >
+                  <Link href="/developer">
+                    Open developer console
+                    <ChevronRight />
+                  </Link>
+                </Button>
+                <Button
+                  size="default"
+                  variant="ghost"
+                  asChild
+                  className="rounded-full border border-white/20 px-5 text-white hover:bg-white/10 hover:text-white sm:size-lg sm:px-6"
+                >
+                  <Link href="/docs/setup">Read setup guide</Link>
+                </Button>
+              </div>
             </div>
           </div>
         </section>
       </main>
       <SiteFooter />
+      <BottomNav />
     </div>
   );
 }

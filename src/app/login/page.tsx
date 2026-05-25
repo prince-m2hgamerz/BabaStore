@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
 import { LogoMark } from "@/components/brand/logo";
-import { Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Sign In"
@@ -18,65 +17,40 @@ export default async function LoginPage({
   const nextPath = next?.startsWith("/") && !next.startsWith("//") ? next : "";
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left panel — branding */}
-      <div className="hidden w-[480px] flex-col justify-between bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-800 p-10 lg:flex">
-        <div>
-          <Link href="/" className="inline-flex items-center gap-2.5">
-            <LogoMark className="size-9" />
-            <span className="text-lg font-semibold text-white">BabaStore</span>
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-canvas-soft px-4 py-10">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[420px] mesh-soft opacity-80"
+      />
+      <Link href="/" className="mb-6 inline-flex items-center gap-2.5">
+        <LogoMark className="size-8" />
+        <span className="text-[15px] font-semibold text-neutral-950">BabaStore</span>
+      </Link>
+
+      <div className="relative z-10 w-full max-w-[400px] rounded-2xl border border-neutral-200 bg-white p-6 shadow-level-3 sm:p-8">
+        <h1 className="display-tight text-[22px] font-semibold text-neutral-950 sm:text-[26px]">
+          Welcome back
+        </h1>
+        <p className="mt-1 text-[14px] text-neutral-500">
+          Sign in to continue to BabaStore.
+        </p>
+        <div className="mt-6">
+          <LoginForm nextPath={nextPath} />
+        </div>
+        <p className="mt-6 text-center text-[13px] text-neutral-500">
+          New here?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-neutral-950 underline-offset-4 hover:underline"
+          >
+            Create an account
           </Link>
-        </div>
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/60">
-            <Sparkles className="size-3" />
-            Open Android App Marketplace
-          </div>
-          <h1 className="text-3xl font-bold leading-tight tracking-tight text-white">
-            Discover, install, and publish Android apps.
-          </h1>
-          <p className="max-w-sm text-sm leading-relaxed text-white/50">
-            Browse thousands of free APKs. Publish your own. No gatekeepers, just
-            apps — delivered directly from the community.
-          </p>
-        </div>
-        <p className="text-xs text-white/30">
-          &copy; {new Date().getFullYear()} BabaStore
         </p>
       </div>
 
-      {/* Right panel — form */}
-      <div className="flex flex-1 items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          {/* Mobile logo */}
-          <div className="mb-8 flex flex-col items-center lg:hidden">
-            <Link href="/" className="mb-4">
-              <LogoMark />
-            </Link>
-            <h1 className="text-xl font-bold text-neutral-900">Welcome back</h1>
-            <p className="mt-1 text-sm text-neutral-500">
-              Sign in to your BabaStore account
-            </p>
-          </div>
-
-          {/* Desktop heading */}
-          <div className="mb-8 hidden lg:block">
-            <h1 className="text-2xl font-bold text-neutral-900">Welcome back</h1>
-            <p className="mt-1 text-sm text-neutral-500">
-              Sign in to your account to continue
-            </p>
-          </div>
-
-          <LoginForm nextPath={nextPath} />
-
-          <p className="mt-6 text-center text-sm text-neutral-500">
-            New to BabaStore?{" "}
-            <Link href="/register" className="font-medium text-blue-600 hover:text-blue-700">
-              Create an account
-            </Link>
-          </p>
-        </div>
-      </div>
+      <p className="relative z-10 mt-8 text-[12px] text-neutral-400">
+        &copy; {new Date().getFullYear()} BabaStore
+      </p>
     </div>
   );
 }

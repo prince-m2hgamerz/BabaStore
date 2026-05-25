@@ -58,7 +58,7 @@
   }
 
   .page-shell {
-    @apply mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[1400px] px-3 sm:px-6 lg:px-8;
   }
 
   .mono-label {
@@ -68,6 +68,113 @@
   .mesh-hero {
     @apply bg-mesh-hero;
     filter: saturate(1.08);
+  }
+
+  .mesh-soft {
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(0, 124, 240, 0.18), transparent 32%),
+      radial-gradient(circle at 78% 8%, rgba(121, 40, 202, 0.14), transparent 30%),
+      radial-gradient(circle at 92% 60%, rgba(255, 0, 128, 0.10), transparent 30%),
+      radial-gradient(circle at 30% 90%, rgba(0, 223, 216, 0.16), transparent 32%);
+  }
+
+  .display-tight {
+    letter-spacing: -0.04em;
+  }
+
+  .section-eyebrow {
+    @apply font-mono text-[11px] leading-4 uppercase tracking-[0.18em] text-[#888888];
+  }
+
+  /* Play-Store-style squircle (M3 super-ellipse approximation) for app icons */
+  .squircle {
+    border-radius: 28%;
+  }
+
+  .squircle-lg {
+    border-radius: 26%;
+  }
+
+  /* Hide horizontal scrollbar but keep scroll snap */
+  .rail {
+    @apply flex snap-x snap-mandatory gap-4 overflow-x-auto scrollbar-none;
+    scroll-padding-inline: 16px;
+  }
+
+  .rail > * {
+    @apply snap-start;
+  }
+
+  /* Tabs: sliding underline tab bar */
+  .tab-bar {
+    @apply relative flex gap-1 overflow-x-auto scrollbar-none;
+  }
+
+  .tab-bar::after {
+    content: "";
+    @apply pointer-events-none absolute inset-x-0 bottom-0 h-px bg-neutral-200;
+  }
+
+  .tab-pill {
+    @apply relative shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-[12px] font-medium text-neutral-600 transition sm:px-4 sm:py-2 sm:text-[13px];
+  }
+
+  .tab-pill[data-active="true"] {
+    @apply bg-neutral-950 text-white;
+  }
+
+  .tab-pill[data-active="false"]:hover {
+    @apply bg-neutral-100 text-neutral-950;
+  }
+
+  /* Sticky bottom install bar on mobile detail pages */
+  .install-bar {
+    @apply fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 px-3 py-2.5 backdrop-blur-md md:hidden;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  /* Bottom nav (mobile) */
+  .bottom-nav {
+    @apply fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-neutral-200 bg-white/95 backdrop-blur-md md:hidden;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+
+  .bottom-nav-item {
+    @apply flex flex-1 flex-col items-center gap-0.5 px-1 py-1.5 text-[10px] font-medium tracking-[0.04em] text-neutral-500 transition;
+  }
+
+  .bottom-nav-item[data-active="true"] {
+    @apply text-neutral-950;
+  }
+
+  .bottom-nav-icon-wrap {
+    @apply relative inline-flex items-center justify-center rounded-full px-3.5 py-0.5 transition;
+  }
+
+  .bottom-nav-item[data-active="true"] .bottom-nav-icon-wrap {
+    @apply bg-neutral-950/5;
+  }
+
+  /* Padding the page so content doesn't sit under the bottom nav on mobile */
+  .has-bottom-nav {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  /* Pages with both bottom nav AND sticky install bar (app detail) */
+  .has-install-bar {
+    padding-bottom: calc(128px + env(safe-area-inset-bottom));
+  }
+
+  @media (min-width: 768px) {
+    .has-bottom-nav,
+    .has-install-bar {
+      padding-bottom: 0;
+    }
+  }
+
+  /* Star ratings inline */
+  .stars {
+    @apply inline-flex items-center gap-px text-[#f5a623];
   }
 
   .scrollbar-none {

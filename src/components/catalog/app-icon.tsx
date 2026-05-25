@@ -10,7 +10,8 @@ export function AppIcon({
   src,
   fallbackSrc,
   className,
-  lazy = true
+  lazy = true,
+  shape = "squircle"
 }: {
   name: string;
   accent: string;
@@ -18,6 +19,7 @@ export function AppIcon({
   fallbackSrc?: string | null;
   className?: string;
   lazy?: boolean;
+  shape?: "squircle" | "rounded";
 }) {
   const [errored, setErrored] = useState(false);
   const resolvedSrc =
@@ -25,7 +27,8 @@ export function AppIcon({
   return (
     <div
       className={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-neutral-200 text-white shadow-glass",
+        "relative flex shrink-0 items-center justify-center overflow-hidden text-white ring-1 ring-black/5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]",
+        shape === "squircle" ? "squircle" : "rounded-md",
         className
       )}
       style={{ background: accent }}

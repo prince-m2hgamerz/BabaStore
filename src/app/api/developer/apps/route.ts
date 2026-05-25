@@ -61,6 +61,29 @@ export async function POST(request: NextRequest) {
   }
 
   const description = `${input.shortDescription}\n\n${input.description}`;
+
+  // If the latest VirusTotal scan for this APK was "blocked", auto-route the
+  // listing into the admin's flagged queue so they see the full scan report
+  // alongside the listing details. The developer is NOT blocked from submitting.
+  let initialStatus: "draft" | "published" | "flagged" =
+    profile.role === "admin" && input.publishNow ? "published" : "draft";
+  try {
+    const { data: latestScan } = await supabase
+      .from("upload_scans")
+      .select("virus_total_status, r2_url")
+      .eq("developer_id", profile.id)
+      .eq("folder", "apks")
+      .eq("r2_url", input.apkUrl)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (latestScan?.virus_total_status === "blocked") {
+      initialStatus = "flagged";
+    }
+  } catch {
+    // Best-effort — if scan lookup fails, fall back to the default status above.
+  }
+
   const { data: app, error: appError } = await supabase
     .from("apps")
     .insert({
@@ -74,7 +97,7 @@ export async function POST(request: NextRequest) {
       privacy_policy_url: input.privacyPolicyUrl,
       apk_url: input.apkUrl,
       icon_url: input.iconUrl,
-      status: profile.role === "admin" && input.publishNow ? "published" : "draft"
+      status: initialStatus
     })
     .select("id")
     .single();

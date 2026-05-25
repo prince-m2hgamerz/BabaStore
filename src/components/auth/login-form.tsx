@@ -18,11 +18,13 @@ export function LoginForm({ nextPath = "" }: { nextPath?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
-    <form action={formAction} className="grid gap-5">
+    <form action={formAction} className="grid gap-4">
       <AuthMessage state={state} />
       {nextPath ? <input type="hidden" name="next" value={nextPath} /> : null}
       <div className="grid gap-1.5">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" className="text-[13px] font-medium text-neutral-700">
+          Email
+        </Label>
         <div className="relative">
           <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
           <Input
@@ -31,17 +33,19 @@ export function LoginForm({ nextPath = "" }: { nextPath?: string }) {
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
-            className="pl-9"
+            className="h-11 rounded-md pl-9"
             required
           />
         </div>
       </div>
       <div className="grid gap-1.5">
         <div className="flex items-center justify-between">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password" className="text-[13px] font-medium text-neutral-700">
+            Password
+          </Label>
           <Link
             href="/forgot-password"
-            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+            className="text-[12px] font-medium text-neutral-600 hover:text-neutral-950"
           >
             Forgot?
           </Link>
@@ -54,13 +58,13 @@ export function LoginForm({ nextPath = "" }: { nextPath?: string }) {
             type="password"
             autoComplete="current-password"
             placeholder="Enter your password"
-            className="pl-9"
+            className="h-11 rounded-md pl-9"
             minLength={8}
             required
           />
         </div>
       </div>
-      <Button type="submit" size="lg" className="w-full" disabled={pending}>
+      <Button type="submit" size="lg" className="mt-1 w-full rounded-full" disabled={pending}>
         {pending ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
         Sign in
       </Button>

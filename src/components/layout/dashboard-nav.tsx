@@ -6,6 +6,7 @@ import {
   Activity,
   BarChart3,
   Boxes,
+  ClipboardCheck,
   Download,
   Flag,
   Heart,
@@ -17,7 +18,6 @@ import {
   PackagePlus,
   Send,
   Settings,
-  ShieldCheck,
   Smartphone,
   Tags,
   Users,
@@ -48,8 +48,9 @@ export const navBySection = {
     { href: "/developer/settings", label: "Settings", icon: Settings }
   ],
   admin: [
-    { href: "/admin", label: "Moderation", icon: ShieldCheck },
-    { href: "/admin/apps", label: "Apps", icon: Boxes },
+    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/queue", label: "Review queue", icon: ClipboardCheck },
+    { href: "/admin/apps", label: "All apps", icon: Boxes },
     { href: "/admin/downloads", label: "Downloads", icon: Download },
     { href: "/admin/reviews", label: "Reviews", icon: MessageSquareText },
     { href: "/admin/users", label: "Users", icon: Users },
@@ -125,7 +126,7 @@ export function DashboardNav({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed left-3 top-[9px] z-50 inline-flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-700 shadow-float transition hover:bg-neutral-50 hover:text-neutral-950 active:scale-95 sm:left-4 sm:top-4 sm:size-10 lg:hidden"
+        className="fixed left-3 top-2 z-50 inline-flex size-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-700 shadow-level-2 transition hover:bg-neutral-50 hover:text-neutral-950 active:scale-95 sm:top-3 sm:size-10 lg:hidden"
         aria-label="Open navigation"
         aria-expanded={open}
       >

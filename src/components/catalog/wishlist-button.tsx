@@ -8,22 +8,26 @@ import { isAppWishlisted } from "@/lib/user/user";
 export async function WishlistButton({
   appId,
   slug,
-  size = "lg"
+  size = "lg",
+  iconOnly = false
 }: {
   appId: string;
   slug: string;
   size?: "default" | "sm" | "lg";
+  iconOnly?: boolean;
 }) {
   const { user } = await getCurrentProfile();
   const returnPath = `/apps/${slug}`;
   const supported = !appId.includes(":");
 
+  const baseClass = iconOnly ? "size-10 rounded-full p-0" : "rounded-full";
+
   if (!user) {
     return (
-      <Button variant="secondary" size={size} asChild>
+      <Button variant="secondary" size={size} asChild className={baseClass}>
         <Link href={`/login?next=${encodeURIComponent(returnPath)}`}>
           <Heart />
-          Add to wishlist
+          {!iconOnly && "Wishlist"}
         </Link>
       </Button>
     );
@@ -31,9 +35,15 @@ export async function WishlistButton({
 
   if (!supported) {
     return (
-      <Button variant="secondary" size={size} disabled title="Wishlist is only available for BabaStore published apps">
+      <Button
+        variant="secondary"
+        size={size}
+        disabled
+        title="Wishlist is only available for BabaStore published apps"
+        className={baseClass}
+      >
         <Heart />
-        Wishlist
+        {!iconOnly && "Wishlist"}
       </Button>
     );
   }
@@ -45,9 +55,14 @@ export async function WishlistButton({
 
   return (
     <form action={action}>
-      <Button variant={saved ? "outline" : "secondary"} size={size} type="submit">
+      <Button
+        variant={saved ? "outline" : "secondary"}
+        size={size}
+        type="submit"
+        className={baseClass}
+      >
         <Heart className={saved ? "fill-current" : undefined} />
-        {saved ? "Saved" : "Add to wishlist"}
+        {!iconOnly && (saved ? "Saved" : "Wishlist")}
       </Button>
     </form>
   );
